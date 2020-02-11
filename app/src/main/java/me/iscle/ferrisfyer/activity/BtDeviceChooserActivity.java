@@ -1,15 +1,5 @@
 package me.iscle.ferrisfyer.activity;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -22,16 +12,21 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.MenuItem;
-import android.widget.Adapter;
 import android.widget.Button;
 import android.widget.Toast;
 
-import java.util.List;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.adapter.BluetoothDeviceAdapter;
 
-public class BtDeviceChooserActivity extends AppCompatActivity {
+public class BtDeviceChooserActivity extends BaseAppCompatActivity {
     private static final String TAG = "BtDeviceChooserActivity";
 
     private static final int REQUEST_LOCATION_PERMISSION = 1;
@@ -46,6 +41,13 @@ public class BtDeviceChooserActivity extends AppCompatActivity {
     private BluetoothLeScanner bluetoothLeScanner;
     private boolean scanning;
     private Handler handler;
+    private ScanCallback scanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            BluetoothDevice device = result.getDevice();
+            adapter.addBluetoothDevice(device);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +75,7 @@ public class BtDeviceChooserActivity extends AppCompatActivity {
         setTitle("Choose a device... - " + getString(R.string.app_name));
     }
 
-    private void onPermissionGranted(){
+    private void onPermissionGranted() {
         bluetoothLeScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
         scanning = false;
         handler = new Handler();
@@ -120,20 +122,11 @@ public class BtDeviceChooserActivity extends AppCompatActivity {
         Log.d(TAG, "Bluetooth LE scan stopped!");
     }
 
-    private ScanCallback scanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            BluetoothDevice device = result.getDevice();
-            Log.d(TAG, "onScanResult: " + device.getAddress());
-            adapter.addBluetoothDevice(device);
-        }
-    };
-
     private void deviceClick(BluetoothDevice device) {
+        stopScan();
         Intent data = new Intent();
         data.putExtra("device_address", device.getAddress());
-        setIntent(data);
-        setResult(RESULT_OK);
+        setResult(RESULT_OK, data);
         finish();
     }
 
