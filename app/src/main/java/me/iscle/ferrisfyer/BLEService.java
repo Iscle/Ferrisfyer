@@ -13,6 +13,7 @@ import android.bluetooth.BluetoothGattService;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -53,7 +54,6 @@ import static me.iscle.ferrisfyer.Constants.ACTION_READ_REMOTE_RSSI;
 import static me.iscle.ferrisfyer.Constants.ACTION_READ_REMOTE_TEMPERATURE;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_ACCELERATION;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_BATTERY;
-import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_CONFIG;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_DECRYPT;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_HV;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_LIGHT;
@@ -70,6 +70,7 @@ import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_START_SINGLE_MOTOR;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_STOP_MOTOR;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_SV;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_TEMPERATURE;
+import static me.iscle.ferrisfyer.Constants.CLIENT_CHARACTERISTIC_CONFIG;
 import static me.iscle.ferrisfyer.Constants.SERVICE_ACCELERATION;
 import static me.iscle.ferrisfyer.Constants.SERVICE_BATTERY;
 import static me.iscle.ferrisfyer.Constants.SERVICE_DECRYPT;
@@ -88,8 +89,7 @@ public class BLEService extends Service {
 
     public static final int SERVICE_NOTIFICATION_ID = 1;
     public static final int STATE_DISCONNECTED = 0;
-    public static final int STATE_CONNECTING = 1;
-    public static final int STATE_CONNECTED = 2;
+    public static final int STATE_CONNECTED = 1;
 
     private final IBinder binder = new BLEBinder();
 
@@ -113,6 +113,8 @@ public class BLEService extends Service {
     private BluetoothGattCharacteristic lightEndCharacteristic;
     private BluetoothGattCharacteristic outStreetCharacteristic;
     private boolean dualMotor = false;
+
+    private GattManager gattManager;
 
     private final BluetoothGattCallback callback = new BluetoothGattCallback() {
         @Override
@@ -152,18 +154,34 @@ public class BLEService extends Service {
                 if (gattServices != null && !gattServices.isEmpty()) {
                     ArrayList<BluetoothGattCharacteristic> toRead = handleServicesDiscovered(gattServices);
 
-                    BLEService.this.notify(decryptCharacteristic, true);
-                    BLEService.this.notify(batteryCharacteristic, true);
-                    BLEService.this.notify(temperatureCharacteristic, true);
-                    BLEService.this.notify(pressureCharacteristic, true);
-                    BLEService.this.notify(accelerationCharacteristic, true);
+                    new Thread(){
+                        @Override
+                        public void run() {
+                            try {
+                                Thread.sleep(500);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
 
-                    for (BluetoothGattCharacteristic characteristic : toRead) {
-                        read(characteristic);
-                    }
+                            BLEService.this.notify(decryptCharacteristic, true);
+                            BLEService.this.notify(batteryCharacteristic, true);
+                            BLEService.this.notify(temperatureCharacteristic, true);
+                            BLEService.this.notify(pressureCharacteristic, true);
+                            BLEService.this.notify(accelerationCharacteristic, true);
 
-                    read(decryptCharacteristic);
-                    read(batteryCharacteristic);
+                            for (BluetoothGattCharacteristic characteristic : toRead) {
+                                read(characteristic);
+                                try {
+                                    Thread.sleep(500);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+
+                            read(decryptCharacteristic);
+                            read(batteryCharacteristic);
+                        }
+                    }.start();
                     return;
                 }
             }
@@ -174,7 +192,15 @@ public class BLEService extends Service {
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                gattManager.onCharacteristicRead(characteristic);
                 onCharacteristicChanged(gatt, characteristic);
+            }
+        }
+
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                gattManager.onCharacteristicWrite(characteristic);
             }
         }
 
@@ -182,6 +208,11 @@ public class BLEService extends Service {
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             handleDataReceived(characteristic);
             sendLocalBroadcast(ACTION_GATT_CHARACTERISTIC_CHANGED);
+        }
+
+        @Override
+        public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            Log.d(TAG, "onDescriptorRead: status = " + status);
         }
 
         @Override
@@ -267,6 +298,7 @@ public class BLEService extends Service {
         device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(address);
         deviceInfo = new Device("Ferrisfyer");
         gatt = device.connectGatt(this, true, callback);
+        gattManager = new GattManager(gatt);
     }
 
     private void sendLocalBroadcast(String action) {
@@ -280,8 +312,7 @@ public class BLEService extends Service {
             return;
         }
 
-        characteristic.setValue(data);
-        gatt.writeCharacteristic(characteristic);
+        gattManager.write(characteristic, data);
     }
 
     public void read(BluetoothGattCharacteristic characteristic) {
@@ -290,7 +321,7 @@ public class BLEService extends Service {
             return;
         }
 
-        gatt.readCharacteristic(characteristic);
+        gattManager.read(characteristic);
     }
 
     public void notify(BluetoothGattCharacteristic characteristic, boolean enable) {
@@ -299,14 +330,7 @@ public class BLEService extends Service {
             return;
         }
 
-        gatt.setCharacteristicNotification(characteristic, enable);
-        for (BluetoothGattDescriptor descriptor : characteristic.getDescriptors()) {
-            if (descriptor.getUuid().toString().equals(CHARACTERISTIC_CONFIG)) {
-                descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-                gatt.writeDescriptor(descriptor);
-                break;
-            }
-        }
+        gattManager.notify(characteristic, enable);
     }
 
     private void handleDataReceived(BluetoothGattCharacteristic characteristic) {
@@ -404,7 +428,7 @@ public class BLEService extends Service {
                             case CHARACTERISTIC_PID:
                             case CHARACTERISTIC_OFFLINECOUNT:
                             case CHARACTERISTIC_POWERCOUNT:
-                                toRead.add(characteristic);
+                                read(characteristic);
                                 break;
                         }
                     }
@@ -560,7 +584,6 @@ public class BLEService extends Service {
             }
         }
 
-        outStreetCharacteristic.setWriteType(WRITE_TYPE_DEFAULT);
         write(outStreetCharacteristic, dataWithChecksum);
     }
 
@@ -582,10 +605,8 @@ public class BLEService extends Service {
         }
 
         if (dualMotor) {
-            startDualMotorCharacteristic.setWriteType(WRITE_TYPE_NO_RESPONSE);
             write(startDualMotorCharacteristic, percent1, percent2);
         } else {
-            startSingleMotorCharacteristic.setWriteType(WRITE_TYPE_NO_RESPONSE);
             write(startSingleMotorCharacteristic, percent1);
         }
     }
@@ -606,17 +627,13 @@ public class BLEService extends Service {
 
         if (b >= 0) {
             byte[] dataWithChecksum = genBleData((byte) 18, data);
-            outStreetCharacteristic.setWriteType(WRITE_TYPE_DEFAULT);
             write(outStreetCharacteristic, dataWithChecksum);
         } else {
-            this.outStreetCharacteristic.setWriteType(WRITE_TYPE_DEFAULT);
             write(outStreetCharacteristic, (byte) 0);
         }
     }
 
     public void onLight(byte percent) {
-        if (lightCharacteristic == null) return;
-
         if (percent < 0) {
             percent = 0;
         } else if (percent > 100) {
@@ -627,8 +644,6 @@ public class BLEService extends Service {
     }
 
     public void onLightEnd() {
-        if (lightEndCharacteristic == null) return;
-
         write(lightEndCharacteristic, (byte) 0);
     }
 

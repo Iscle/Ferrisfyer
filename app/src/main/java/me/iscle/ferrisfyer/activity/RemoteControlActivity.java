@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -19,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.TimeUnit;
 
 import me.iscle.ferrisfyer.R;
+import me.iscle.ferrisfyer.model.SetMotorSpeed;
 import me.iscle.ferrisfyer.model.WebSocketCapsule;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -28,11 +30,33 @@ import okhttp3.WebSocketListener;
 
 public class RemoteControlActivity extends AppCompatActivity {
     private static final String TAG = "RemoteControlActivity";
+
+    private long mBackPressed;
+    private WebSocket webSocket;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_remote_control);
+
+        startRemoteControl();
+
+        findViewById(R.id.button5).setOnClickListener(v -> {
+            webSocket.send(new WebSocketCapsule("SET_MOTOR_SPEED", new SetMotorSpeed("iscle", (byte) 100)).toJson());
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopRemoteControl();
+        super.onDestroy();
+    }
+
     private final WebSocketListener webSocketListener = new WebSocketListener() {
         @Override
         public void onOpen(@NotNull WebSocket webSocket, @NotNull Response response) {
             Log.d(TAG, "webSocketListener: onOpen");
-            webSocket.send(new WebSocketCapsule("SET_ROLE", "REMOTE").toJson());
+            webSocket.send(new WebSocketCapsule("SET_LOCAL", false).toJson());
         }
 
         @Override
@@ -60,22 +84,6 @@ public class RemoteControlActivity extends AppCompatActivity {
             Log.d(TAG, "webSocketListener: onFailure: " + t.getMessage());
         }
     };
-    private long mBackPressed;
-    private WebSocket webSocket;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_remote_control);
-
-        startRemoteControl();
-    }
-
-    @Override
-    protected void onDestroy() {
-        stopRemoteControl();
-        super.onDestroy();
-    }
 
     public void startRemoteControl() {
         stopRemoteControl();

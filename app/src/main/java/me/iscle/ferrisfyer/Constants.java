@@ -29,7 +29,7 @@ public class Constants {
     public static final String SERVICE_OUT_STREET = "00009000-0000-1000-8000-00805f9b34fb";
     public static final String SERVICE_PRESSURE = "00006030-0000-1000-8000-00805f9b34fb";
     public static final String SERVICE_TEMPERATURE = "00006020-0000-1000-8000-00805f9b34fb";
-    public static final String CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
+    public static final String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
 
     public static final String ACTION_GATT_DEVICE_CONNECTED = "me.iscle.ferrisfyer.action.GATT_DEVICE_CONNECTED";
     public static final String ACTION_GATT_DEVICE_DISCONNECTED = "me.iscle.ferrisfyer.action.GATT_DEVICE_DISCONNECTED";
