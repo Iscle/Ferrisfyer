@@ -13,7 +13,6 @@ import android.bluetooth.BluetoothGattService;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
-import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -23,16 +22,14 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import me.iscle.ferrisfyer.activity.LocalControlActivity;
 import me.iscle.ferrisfyer.model.Device;
+import me.iscle.ferrisfyer.model.WebSocketCapsule;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -45,7 +42,6 @@ import static android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPON
 import static me.iscle.ferrisfyer.Constants.ACTION_GATT_CHARACTERISTIC_CHANGED;
 import static me.iscle.ferrisfyer.Constants.ACTION_GATT_DEVICE_CONNECTED;
 import static me.iscle.ferrisfyer.Constants.ACTION_GATT_DEVICE_DISCONNECTED;
-import static me.iscle.ferrisfyer.Constants.ACTION_GATT_SERVICES_DISCOVERED;
 import static me.iscle.ferrisfyer.Constants.ACTION_READ_REMOTE_ACCELERATION;
 import static me.iscle.ferrisfyer.Constants.ACTION_READ_REMOTE_BATTERY;
 import static me.iscle.ferrisfyer.Constants.ACTION_READ_REMOTE_INFO;
@@ -70,7 +66,6 @@ import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_START_SINGLE_MOTOR;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_STOP_MOTOR;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_SV;
 import static me.iscle.ferrisfyer.Constants.CHARACTERISTIC_TEMPERATURE;
-import static me.iscle.ferrisfyer.Constants.CLIENT_CHARACTERISTIC_CONFIG;
 import static me.iscle.ferrisfyer.Constants.SERVICE_ACCELERATION;
 import static me.iscle.ferrisfyer.Constants.SERVICE_BATTERY;
 import static me.iscle.ferrisfyer.Constants.SERVICE_DECRYPT;
@@ -80,7 +75,6 @@ import static me.iscle.ferrisfyer.Constants.SERVICE_OUT_STREET;
 import static me.iscle.ferrisfyer.Constants.SERVICE_PRESSURE;
 import static me.iscle.ferrisfyer.Constants.SERVICE_TEMPERATURE;
 import static me.iscle.ferrisfyer.CustomUtils.bytesToHexString;
-import static me.iscle.ferrisfyer.CustomUtils.calculateCrc;
 import static me.iscle.ferrisfyer.CustomUtils.genBleData;
 import static me.iscle.ferrisfyer.CustomUtils.validateBleData;
 
@@ -152,36 +146,7 @@ public class BLEService extends Service {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 List<BluetoothGattService> gattServices = gatt.getServices();
                 if (gattServices != null && !gattServices.isEmpty()) {
-                    ArrayList<BluetoothGattCharacteristic> toRead = handleServicesDiscovered(gattServices);
-
-                    new Thread(){
-                        @Override
-                        public void run() {
-                            try {
-                                Thread.sleep(500);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-
-                            BLEService.this.notify(decryptCharacteristic, true);
-                            BLEService.this.notify(batteryCharacteristic, true);
-                            BLEService.this.notify(temperatureCharacteristic, true);
-                            BLEService.this.notify(pressureCharacteristic, true);
-                            BLEService.this.notify(accelerationCharacteristic, true);
-
-                            for (BluetoothGattCharacteristic characteristic : toRead) {
-                                read(characteristic);
-                                try {
-                                    Thread.sleep(500);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-
-                            read(decryptCharacteristic);
-                            read(batteryCharacteristic);
-                        }
-                    }.start();
+                    handleServicesDiscovered(gattServices);
                     return;
                 }
             }
@@ -211,11 +176,6 @@ public class BLEService extends Service {
         }
 
         @Override
-        public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-            Log.d(TAG, "onDescriptorRead: status = " + status);
-        }
-
-        @Override
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Intent i = new Intent(ACTION_READ_REMOTE_RSSI);
@@ -242,12 +202,18 @@ public class BLEService extends Service {
 
         @Override
         public void onMessage(@NotNull WebSocket webSocket, @NotNull String text) {
-            Log.d(TAG, "onMessage: " + text);
+            Log.d(TAG, "onMessage: text = " + text);
+            WebSocketCapsule capsule = WebSocketCapsule.fromJson(text);
+            switch (capsule.getCommand()) {
+                case "SET_MOTOR_SPEED":
+
+                    break;
+            }
         }
 
         @Override
         public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
-            Log.d(TAG, "onClosing");
+            Log.d(TAG, "onClosing: code = " + code + ", reason = " + reason);
         }
 
         @Override
@@ -342,9 +308,7 @@ public class BLEService extends Service {
         handleDataReceived(data, intData != null ? intData : 0, characteristicUuid, serviceUuid);
     }
 
-    private ArrayList<BluetoothGattCharacteristic> handleServicesDiscovered(List<BluetoothGattService> services) {
-        ArrayList<BluetoothGattCharacteristic> toRead = new ArrayList<>();
-
+    private void handleServicesDiscovered(List<BluetoothGattService> services) {
         for (BluetoothGattService service : services) {
             String serviceUuid = service.getUuid().toString();
             switch (serviceUuid) {
@@ -390,6 +354,8 @@ public class BLEService extends Service {
                         String characteristicUuid = characteristic.getUuid().toString();
                         if (characteristicUuid.equals(CHARACTERISTIC_BATTERY)) {
                             batteryCharacteristic = characteristic;
+                            read(characteristic);
+                            notify(characteristic, true);
                         }
                     }
                     break;
@@ -438,13 +404,13 @@ public class BLEService extends Service {
                         String characteristicUuid = characteristic.getUuid().toString();
                         if (characteristicUuid.equals(CHARACTERISTIC_DECRYPT)) {
                             decryptCharacteristic = characteristic;
+                            read(characteristic);
+                            notify(characteristic, true);
                         }
                     }
                     break;
             }
         }
-
-        return toRead;
     }
 
     private void handleDataReceived(byte[] data, int intData, String characteristicUuid, String serviceUuid) {

@@ -41,7 +41,7 @@ public class CustomUtils {
         StringBuilder sb = new StringBuilder();
 
         for (byte b : data) {
-            String hexString = Integer.toHexString(b & 255);
+            String hexString = Integer.toHexString(b & 0xFF);
             if (hexString.length() < 2) {
                 sb.append(0);
             }
@@ -51,18 +51,18 @@ public class CustomUtils {
         return sb.toString();
     }
 
-    public static byte[] calculateCrc(byte[] bArr) {
-        int b = 65535;
-        for (byte b2 : bArr) {
-            int b3 = (((b << 8) | (b >> 8)) & 65535) ^ b2;
-            int b4 = b3 ^ ((b3 & 255) >> 4);
-            int b5 = b4 ^ (((b4 << 8) << 4) & 65535);
-            b = b5 ^ ((((b5 & 255) << 4) << 1) & 65535);
+    public static byte[] calculateCrc(byte[] data) {
+        int b = 0xFFFF;
+        for (byte b2 : data) {
+            int b3 = (((b << 8) | (b >> 8)) & 0xFFFF) ^ b2;
+            int b4 = b3 ^ ((b3 & 0xFF) >> 4);
+            int b5 = b4 ^ (((b4 << 8) << 4) & 0xFFFF);
+            b = b5 ^ ((((b5 & 0xFF) << 4) << 1) & 0xFFFF);
         }
 
         byte[] checksum = new byte[2];
-        checksum[1] = (byte) ((b >> 8) & 255);
-        checksum[0] = (byte) (b & 255);
+        checksum[1] = (byte) ((b >> 8) & 0xFF);
+        checksum[0] = (byte) (b & 0xFF);
         return checksum;
     }
 
