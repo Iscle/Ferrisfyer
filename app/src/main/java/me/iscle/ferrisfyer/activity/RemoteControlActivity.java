@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.TimeUnit;
 
 import me.iscle.ferrisfyer.R;
+import me.iscle.ferrisfyer.model.Device;
 import me.iscle.ferrisfyer.model.SetMotorSpeed;
 import me.iscle.ferrisfyer.model.WebSocketCapsule;
 import okhttp3.OkHttpClient;
@@ -66,7 +67,8 @@ public class RemoteControlActivity extends AppCompatActivity {
                 WebSocketCapsule wsc = WebSocketCapsule.fromJson(text);
                 switch (wsc.getCommand()) {
                     case "SET_DATA":
-
+                        Device device = wsc.getData(Device.class);
+                        Log.d(TAG, "onMessage: " + device.toString());
                         break;
                 }
             } catch (JsonParseException e) {

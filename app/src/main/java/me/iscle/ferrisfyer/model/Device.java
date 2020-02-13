@@ -77,4 +77,18 @@ public class Device {
     public void setPowerCount(String powerCount) {
         this.powerCount = powerCount;
     }
+
+    @Override
+    public String toString() {
+        return "Device{" +
+                "name='" + name + '\'' +
+                ", mac='" + mac + '\'' +
+                ", sv='" + sv + '\'' +
+                ", hv='" + hv + '\'' +
+                ", sn='" + sn + '\'' +
+                ", pid='" + pid + '\'' +
+                ", offlineCount='" + offlineCount + '\'' +
+                ", powerCount='" + powerCount + '\'' +
+                '}';
+    }
 }

@@ -496,6 +496,9 @@ public class BLEService extends Service {
                         deviceInfo.setPowerCount(powerCount);
                         break;
                 }
+                if (webSocket != null) {
+                    webSocket.send(new WebSocketCapsule("SET_DATA", deviceInfo).toJson());
+                }
                 sendLocalBroadcast(ACTION_READ_REMOTE_INFO);
                 break;
             case SERVICE_DECRYPT:
@@ -509,6 +512,10 @@ public class BLEService extends Service {
                 }
                 break;
         }
+    }
+
+    public Device getDevice() {
+        return deviceInfo;
     }
 
     public void onResultDecrypt(byte[] data) {

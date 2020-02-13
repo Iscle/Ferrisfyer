@@ -101,9 +101,10 @@ public class GattManager {
         }
 
         @Override
-        protected Void doInBackground(Void... voids) {
+        protected synchronized Void doInBackground(Void... voids) {
             try {
-                wait(gattManager.getCurrentOperation().getTimeoutMillis());
+                //wait(gattManager.getCurrentOperation().getTimeoutMillis());
+                wait(1000);
             } catch (InterruptedException ignored) {
             }
 
@@ -118,7 +119,7 @@ public class GattManager {
         }
 
         @Override
-        protected void onCancelled() {
+        protected synchronized void onCancelled() {
             super.onCancelled();
             notify();
         }
