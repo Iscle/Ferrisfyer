@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -42,9 +41,7 @@ public class RemoteControlActivity extends AppCompatActivity {
 
         startRemoteControl();
 
-        findViewById(R.id.button5).setOnClickListener(v -> {
-            webSocket.send(new WebSocketCapsule("SET_MOTOR_SPEED", new SetMotorSpeed("iscle", (byte) 100)).toJson());
-        });
+        findViewById(R.id.button5).setOnClickListener(v -> webSocket.send(new WebSocketCapsule("SET_MOTOR_SPEED", new SetMotorSpeed("iscle", (byte) 100)).toJson()));
     }
 
     @Override
@@ -125,7 +122,7 @@ public class RemoteControlActivity extends AppCompatActivity {
             sharedPreferencesEditor.putBoolean("keep_logged_in", false);
             sharedPreferencesEditor.remove("password");
             sharedPreferencesEditor.apply();
-            Intent i = new Intent(this, RoleChooserActivity.class);
+            Intent i = new Intent(this, MainActivity.class);
             startActivity(i);
             finish();
             return true;

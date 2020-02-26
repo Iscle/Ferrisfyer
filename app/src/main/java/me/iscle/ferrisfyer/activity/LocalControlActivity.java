@@ -24,8 +24,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
 import me.iscle.ferrisfyer.BLEService;
 import me.iscle.ferrisfyer.Constants;
+import me.iscle.ferrisfyer.DeviceControlActivity;
 import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.model.Device;
 
@@ -39,6 +43,7 @@ public class LocalControlActivity extends BaseAppCompatActivity implements View.
 
     private SeekBar seekBar;
 
+    private TextView connectionStatus;
     private TextView name;
     private TextView mac;
     private TextView sv;
@@ -48,6 +53,8 @@ public class LocalControlActivity extends BaseAppCompatActivity implements View.
     private TextView offlineCount;
     private TextView powerCount;
     private ProgressBar battery;
+
+    private boolean isStopped;
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -67,6 +74,7 @@ public class LocalControlActivity extends BaseAppCompatActivity implements View.
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_local_control);
 
+        connectionStatus = findViewById(R.id.connection_status);
         name = findViewById(R.id.name);
         mac = findViewById(R.id.mac);
         sv = findViewById(R.id.sv);
@@ -75,30 +83,34 @@ public class LocalControlActivity extends BaseAppCompatActivity implements View.
         pid = findViewById(R.id.pid);
         offlineCount = findViewById(R.id.offline_count);
         powerCount = findViewById(R.id.power_count);
-        battery = findViewById(R.id.battery);
+        battery = findViewById(R.id.battery_level);
 
         findViewById(R.id.button).setOnClickListener(this);
         findViewById(R.id.button2).setOnClickListener(this);
         findViewById(R.id.button3).setOnClickListener(this);
         findViewById(R.id.button4).setOnClickListener(this);
         seekBar = findViewById(R.id.seekBar);
-        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                //bleService.startMotor((byte) progress);
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
+        seekBar.setOnSeekBarChangeListener(seekBarChangeListener);
     }
+
+    private final SeekBar.OnSeekBarChangeListener seekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            if (bound) {
+                bleService.startMotor((byte) progress);
+            }
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+
+        }
+    };
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -106,23 +118,35 @@ public class LocalControlActivity extends BaseAppCompatActivity implements View.
             switch (intent.getAction()) {
                 case Constants.ACTION_READ_REMOTE_INFO:
                     if (bound) {
-                        Device d = bleService.getDevice();
-                        name.setText(d.getName());
-                        mac.setText(d.getMac());
-                        sv.setText(d.getSv());
-                        hv.setText(d.getHv());
-                        sn.setText(d.getSn());
-                        pid.setText(d.getPid());
-                        offlineCount.setText(d.getOfflineCount());
-                        powerCount.setText(d.getPowerCount());
+                        updateDeviceInfo(bleService.getDevice());
                     }
                     break;
                 case Constants.ACTION_READ_REMOTE_BATTERY:
                     battery.setProgress(intent.getByteExtra("battery", (byte) 0));
                     break;
+                case Constants.ACTION_GATT_DEVICE_CONNECTED: {
+                    Calendar cal = GregorianCalendar.getInstance();
+                    connectionStatus.setText("Device connected: " + cal.getTime());
+                }
+                    break;
+                case Constants.ACTION_GATT_DEVICE_DISCONNECTED: {
+                    Calendar cal = GregorianCalendar.getInstance();
+                    connectionStatus.setText("Device disconnected: " + cal.getTime());
+                }
+                    break;
             }
         }
     };
+
+    private void updateDeviceInfo(Device device) {
+        mac.setText("MAC: " + device.getMac());
+        sv.setText("Software version: " + device.getSv());
+        hv.setText("Hardware version: " + device.getHv());
+        sn.setText("Serial number: " + device.getSn());
+        pid.setText("Product ID: " + device.getPid());
+        offlineCount.setText("Offline count: " + device.getOfflineCount());
+        powerCount.setText("Power count: " + device.getPowerCount());
+    }
 
     @Override
     protected void onResume() {
@@ -179,6 +203,8 @@ public class LocalControlActivity extends BaseAppCompatActivity implements View.
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Constants.ACTION_READ_REMOTE_INFO);
         intentFilter.addAction(Constants.ACTION_READ_REMOTE_BATTERY);
+        intentFilter.addAction(Constants.ACTION_GATT_DEVICE_CONNECTED);
+        intentFilter.addAction(Constants.ACTION_GATT_DEVICE_DISCONNECTED);
         LocalBroadcastManager.getInstance(this).registerReceiver(receiver, intentFilter);
     }
 
@@ -225,18 +251,24 @@ public class LocalControlActivity extends BaseAppCompatActivity implements View.
         switch (v.getId()) {
             case R.id.button:
                 // start motor
-                bleService.startMotor((byte) seekBar.getProgress());
+                if (bound) {
+                    bleService.startMotor((byte) seekBar.getProgress());
+                }
                 break;
             case R.id.button2:
                 // stop motor
-                bleService.stopMotor();
+                if (bound) {
+                    bleService.stopMotor();
+                }
                 break;
             case R.id.button3:
-                //bleService.onLight((byte) seekBar.getProgress());
-                bleService.startRemoteControl();
+                if (bound) {
+                    //bleService.onLight((byte) seekBar.getProgress());
+                    bleService.startRemoteControl();
+                }
                 break;
             case R.id.button4:
-                Intent i = new Intent(this, LoginActivity.class);
+                Intent i = new Intent(this, DeviceControlActivity.class);
                 startActivity(i);
                 break;
         }

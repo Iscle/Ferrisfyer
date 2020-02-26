@@ -1,7 +1,9 @@
 package me.iscle.ferrisfyer.model;
 
+import android.bluetooth.BluetoothDevice;
+
 public class Device {
-    private String name;
+    private BluetoothDevice bluetoothDevice;
     private String mac;
     private String sv;
     private String hv;
@@ -10,16 +12,23 @@ public class Device {
     private String offlineCount;
     private String powerCount;
 
-    public Device(String name) {
-        this.name = name;
+    public Device(BluetoothDevice bluetoothDevice) {
+        this.bluetoothDevice = bluetoothDevice;
+        this.mac = "-";
+        this.sv = "-";
+        this.hv = "-";
+        this.sn = "-";
+        this.pid = "-";
+        this.offlineCount= "-";
+        this.powerCount = "-";
     }
 
-    public String getName() {
-        return name;
+    public BluetoothDevice getBluetoothDevice() {
+        return bluetoothDevice;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setBluetoothDevice(BluetoothDevice bluetoothDevice) {
+        this.bluetoothDevice = bluetoothDevice;
     }
 
     public String getMac() {
@@ -81,7 +90,6 @@ public class Device {
     @Override
     public String toString() {
         return "Device{" +
-                "name='" + name + '\'' +
                 ", mac='" + mac + '\'' +
                 ", sv='" + sv + '\'' +
                 ", hv='" + hv + '\'' +

@@ -5,7 +5,7 @@ android {
     buildToolsVersion "29.0.2"
     defaultConfig {
         applicationId "me.iscle.ferrisfyer"
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
@@ -38,4 +38,6 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.3.1'
     implementation 'com.squareup.retrofit2:retrofit:2.7.1'
     implementation 'com.squareup.retrofit2:converter-gson:2.7.1'
+    implementation 'com.ramotion.fluidslider:fluid-slider:0.3.1'
+    implementation 'com.github.SanojPunchihewa:GlowButton:1.0.0'
 }

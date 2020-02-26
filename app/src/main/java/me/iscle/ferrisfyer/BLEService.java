@@ -39,7 +39,6 @@ import okhttp3.WebSocketListener;
 import static android.bluetooth.BluetoothGattCharacteristic.FORMAT_SINT32;
 import static android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT;
 import static android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE;
-import static me.iscle.ferrisfyer.Constants.ACTION_GATT_CHARACTERISTIC_CHANGED;
 import static me.iscle.ferrisfyer.Constants.ACTION_GATT_DEVICE_CONNECTED;
 import static me.iscle.ferrisfyer.Constants.ACTION_GATT_DEVICE_DISCONNECTED;
 import static me.iscle.ferrisfyer.Constants.ACTION_READ_REMOTE_ACCELERATION;
@@ -78,7 +77,7 @@ import static me.iscle.ferrisfyer.CustomUtils.bytesToHexString;
 import static me.iscle.ferrisfyer.CustomUtils.genBleData;
 import static me.iscle.ferrisfyer.CustomUtils.validateBleData;
 
-public class BLEService extends Service {
+public class BLEService extends Service implements IDeviceControl {
     private static final String TAG = "BLEService";
 
     public static final int SERVICE_NOTIFICATION_ID = 1;
@@ -88,12 +87,11 @@ public class BLEService extends Service {
     private final IBinder binder = new BLEBinder();
 
     private LocalBroadcastManager localBroadcastManager;
-    private BluetoothDevice device;
     private BluetoothGatt gatt;
     private int state;
     private Timer rssiTimer;
-    private Device deviceInfo;
-    private int deviceMode;
+    private Device device;
+    private int deviceMode; // TODO: Find what this is for lol
     private WebSocket webSocket;
     private BluetoothGattCharacteristic decryptCharacteristic;
     private BluetoothGattCharacteristic accelerationCharacteristic;
@@ -110,10 +108,13 @@ public class BLEService extends Service {
 
     private GattManager gattManager;
 
+    public WebSocket getWebSocket() {
+        return webSocket;
+    }
+
     private final BluetoothGattCallback callback = new BluetoothGattCallback() {
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-            Log.d(TAG, "onDescriptorWrite: status = " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (descriptor.getCharacteristic().getUuid().toString().equals(CHARACTERISTIC_OUT_STREET)) {
                     readDeviceMode();
@@ -123,7 +124,6 @@ public class BLEService extends Service {
 
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            Log.d(TAG, "onConnectionStateChange: status = " + status + ", newState = " + newState);
             if (newState == BluetoothGatt.STATE_CONNECTED) {
                 if (rssiTimer != null) rssiTimer.cancel();
                 gatt.discoverServices();
@@ -142,7 +142,6 @@ public class BLEService extends Service {
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            Log.d(TAG, "onServicesDiscovered: status = " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 List<BluetoothGattService> gattServices = gatt.getServices();
                 if (gattServices != null && !gattServices.isEmpty()) {
@@ -172,7 +171,6 @@ public class BLEService extends Service {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             handleDataReceived(characteristic);
-            sendLocalBroadcast(ACTION_GATT_CHARACTERISTIC_CHANGED);
         }
 
         @Override
@@ -188,7 +186,7 @@ public class BLEService extends Service {
     private final TimerTask rssiTimerTask = new TimerTask() {
         @Override
         public void run() {
-            if (state == STATE_CONNECTED) {
+            if (isConnected()) {
                 gatt.readRemoteRssi();
             }
         }
@@ -197,28 +195,35 @@ public class BLEService extends Service {
     private final WebSocketListener webSocketListener = new WebSocketListener() {
         @Override
         public void onOpen(@NotNull WebSocket webSocket, @NotNull Response response) {
-            Log.d(TAG, "onOpen");
+            Log.d(TAG, "webSocketListener: onOpen()");
         }
 
         @Override
         public void onMessage(@NotNull WebSocket webSocket, @NotNull String text) {
-            Log.d(TAG, "onMessage: text = " + text);
+            Log.d(TAG, "webSocketListener: onMessage: text = " + text);
             WebSocketCapsule capsule = WebSocketCapsule.fromJson(text);
             switch (capsule.getCommand()) {
                 case "SET_MOTOR_SPEED":
-
+                    startMotor(capsule.getData(byte.class));
+                    break;
+                case "SET_DUAL_MOTOR_SPEED":
+                    byte[] percents = capsule.getData(byte[].class);
+                    startMotor(percents[0], percents[1]);
+                    break;
+                case "STOP_MOTOR":
+                    stopMotor();
                     break;
             }
         }
 
         @Override
         public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
-            Log.d(TAG, "onClosing: code = " + code + ", reason = " + reason);
+            Log.d(TAG, "webSocketListener: onClosing: code = " + code + ", reason = " + reason);
         }
 
         @Override
         public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, @org.jetbrains.annotations.Nullable Response response) {
-            Log.d(TAG, "onFailure: " + t.getMessage());
+            Log.d(TAG, "webSocketListener: onFailure: " + t.getMessage());
         }
     };
 
@@ -261,9 +266,9 @@ public class BLEService extends Service {
     }
 
     public void connectDevice(String address) {
-        device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(address);
-        deviceInfo = new Device("Ferrisfyer");
-        gatt = device.connectGatt(this, true, callback);
+        BluetoothDevice bluetoothDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(address);
+        device = new Device(bluetoothDevice);
+        gatt = device.getBluetoothDevice().connectGatt(this, true, callback);
         gattManager = new GattManager(gatt);
     }
 
@@ -463,41 +468,41 @@ public class BLEService extends Service {
                     case CHARACTERISTIC_MAC:
                         String mac = bytesToHexString(data);
                         Log.d(TAG, "handleDataReceived: CHARACTERISTIC_MAC = " + mac);
-                        deviceInfo.setMac(mac);
+                        device.setMac(mac);
                         break;
                     case CHARACTERISTIC_SV:
                         String sv = new String(data).trim();
                         Log.d(TAG, "handleDataReceived: CHARACTERISTIC_SV = " + sv);
-                        deviceInfo.setSv(sv);
+                        device.setSv(sv);
                         break;
                     case CHARACTERISTIC_HV:
                         String hv = new String(data).trim();
                         Log.d(TAG, "handleDataReceived: CHARACTERISTIC_HV = " + hv);
-                        deviceInfo.setHv(hv);
+                        device.setHv(hv);
                         break;
                     case CHARACTERISTIC_SN:
                         String sn = new String(data).trim();
                         Log.d(TAG, "handleDataReceived: CHARACTERISTIC_SN = " + sn);
-                        deviceInfo.setSn(sn);
+                        device.setSn(sn);
                         break;
                     case CHARACTERISTIC_PID:
                         String pid = new String(data).trim();
                         Log.d(TAG, "handleDataReceived: CHARACTERISTIC_PID = " + pid);
-                        deviceInfo.setPid(pid);
+                        device.setPid(pid);
                         break;
                     case CHARACTERISTIC_OFFLINECOUNT:
                         String offlineCount = new String(data).trim();
                         Log.d(TAG, "handleDataReceived: CHARACTERISTIC_OFFLINECOUNT = " + offlineCount);
-                        deviceInfo.setOfflineCount(offlineCount);
+                        device.setOfflineCount(offlineCount);
                         break;
                     case CHARACTERISTIC_POWERCOUNT:
                         String powerCount = new String(data).trim();
                         Log.d(TAG, "handleDataReceived: CHARACTERISTIC_POWERCOUNT = " + powerCount);
-                        deviceInfo.setPowerCount(powerCount);
+                        device.setPowerCount(powerCount);
                         break;
                 }
                 if (webSocket != null) {
-                    webSocket.send(new WebSocketCapsule("SET_DATA", deviceInfo).toJson());
+                    webSocket.send(new WebSocketCapsule("SET_DATA", device).toJson());
                 }
                 sendLocalBroadcast(ACTION_READ_REMOTE_INFO);
                 break;
@@ -514,8 +519,20 @@ public class BLEService extends Service {
         }
     }
 
+    public boolean isConnected() {
+        return state == STATE_CONNECTED;
+    }
+
+    public int getDeviceStatus() {
+        return 1;
+    }
+
+    public boolean getDeviceMotorStatus() {
+        return true;
+    }
+
     public Device getDevice() {
-        return deviceInfo;
+        return device;
     }
 
     public void onResultDecrypt(byte[] data) {
