@@ -29,6 +29,7 @@ import java.util.TimerTask;
 
 import me.iscle.ferrisfyer.activity.LocalControlActivity;
 import me.iscle.ferrisfyer.model.Device;
+import me.iscle.ferrisfyer.model.SetMotorSpeed;
 import me.iscle.ferrisfyer.model.WebSocketCapsule;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -196,34 +197,53 @@ public class BLEService extends Service implements IDeviceControl {
         @Override
         public void onOpen(@NotNull WebSocket webSocket, @NotNull Response response) {
             Log.d(TAG, "webSocketListener: onOpen()");
+            WebSocketCapsule capsule = new WebSocketCapsule("SET_LOCAL", true);
+            webSocket.send(capsule.toJson());
+            Intent i = new Intent(Constants.ACTION_WEBSOCKET_CONNECTED);
+            LocalBroadcastManager.getInstance(BLEService.this).sendBroadcast(i);
         }
 
         @Override
         public void onMessage(@NotNull WebSocket webSocket, @NotNull String text) {
             Log.d(TAG, "webSocketListener: onMessage: text = " + text);
-            WebSocketCapsule capsule = WebSocketCapsule.fromJson(text);
-            switch (capsule.getCommand()) {
-                case "SET_MOTOR_SPEED":
-                    startMotor(capsule.getData(byte.class));
-                    break;
-                case "SET_DUAL_MOTOR_SPEED":
-                    byte[] percents = capsule.getData(byte[].class);
-                    startMotor(percents[0], percents[1]);
-                    break;
-                case "STOP_MOTOR":
-                    stopMotor();
-                    break;
+            try {
+                WebSocketCapsule capsule = WebSocketCapsule.fromJson(text);
+                switch (capsule.getCommand()) {
+                    case "HACK":
+                        Log.d(TAG, "onMessage: this is a HACK!");
+                        break;
+                    case "SET_MOTOR_SPEED":
+                        byte speed = capsule.getData(byte.class);
+                        if (speed == 0) {
+                            stopMotor();
+                        } else {
+                            startMotor(speed);
+                        }
+                        break;
+                    case "SET_DUAL_MOTOR_SPEED":
+                        byte[] percents = capsule.getData(byte[].class);
+                        startMotor(percents[0], percents[1]);
+                        break;
+                    case "STOP_MOTOR":
+                        stopMotor();
+                        break;
+                }
+            } catch (Exception e) {
+                Log.d(TAG, "onMessage: wrong capsule!");
             }
         }
 
         @Override
         public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
             Log.d(TAG, "webSocketListener: onClosing: code = " + code + ", reason = " + reason);
+            Intent i = new Intent(Constants.ACTION_WEBSOCKET_DISCONNECTED);
+            LocalBroadcastManager.getInstance(BLEService.this).sendBroadcast(i);
         }
 
         @Override
         public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, @org.jetbrains.annotations.Nullable Response response) {
             Log.d(TAG, "webSocketListener: onFailure: " + t.getMessage());
+            startRemoteControl();
         }
     };
 

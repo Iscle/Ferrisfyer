@@ -31,6 +31,9 @@ public class Constants {
     public static final String SERVICE_TEMPERATURE = "00006020-0000-1000-8000-00805f9b34fb";
     public static final String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
 
+    public static final String ACTION_WEBSOCKET_CONNECTED = "me.iscle.ferrisfyer.action.WEBSOCKET_CONNECTED";
+    public static final String ACTION_WEBSOCKET_DISCONNECTED = "me.iscle.ferrisfyer.actino.WEBSOCKET_DISCONNECTED";
+
     public static final String ACTION_GATT_DEVICE_CONNECTED = "me.iscle.ferrisfyer.action.GATT_DEVICE_CONNECTED";
     public static final String ACTION_GATT_DEVICE_DISCONNECTED = "me.iscle.ferrisfyer.action.GATT_DEVICE_DISCONNECTED";
     public static final String ACTION_GATT_SERVICES_DISCOVERED = "me.iscle.ferrisfyer.action.GATT_SERVICES_DISCOVERED";

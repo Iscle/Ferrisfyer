@@ -7,6 +7,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.jetbrains.annotations.NotNull;
 
+import me.iscle.ferrisfyer.model.SetMotorSpeed;
 import me.iscle.ferrisfyer.model.WebSocketCapsule;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -55,6 +56,10 @@ public class WebSocketManager implements IDeviceControl {
         @Override
         public void onOpen(@NotNull WebSocket webSocket, @NotNull Response response) {
             Log.d(TAG, "webSocketListener: onOpen()");
+
+            WebSocketCapsule capsule = new WebSocketCapsule("SET_LOCAL", false);
+            webSocket.send(capsule.toJson());
+
             if (callback != null) {
                 callback.onConnect();
             }
@@ -63,11 +68,15 @@ public class WebSocketManager implements IDeviceControl {
         @Override
         public void onMessage(@NotNull WebSocket webSocket, @NotNull String text) {
             Log.d(TAG, "webSocketListener: onMessage: text = " + text);
-            WebSocketCapsule capsule = WebSocketCapsule.fromJson(text);
-            switch (capsule.getCommand()) {
-                case "SET_MOTOR_SPEED":
+            try {
+                WebSocketCapsule capsule = WebSocketCapsule.fromJson(text);
+                switch (capsule.getCommand()) {
+                    case "SET_MOTOR_SPEED":
 
-                    break;
+                        break;
+                }
+            } catch (Exception e) {
+                Log.d(TAG, "onMessage: wrong capsule!");
             }
         }
 
@@ -85,12 +94,14 @@ public class WebSocketManager implements IDeviceControl {
             if (callback != null) {
                 callback.onError("onFailure()");
             }
+
+            startRemoteControl();
         }
     };
 
     @Override
     public void startMotor(byte percent) {
-        WebSocketCapsule capsule = new WebSocketCapsule("SET_MOTOR_SPEED", percent);
+        WebSocketCapsule capsule = new WebSocketCapsule("SET_MOTOR_SPEED", new SetMotorSpeed(name, percent));
         webSocket.send(capsule.toJson());
     }
 
@@ -102,7 +113,7 @@ public class WebSocketManager implements IDeviceControl {
 
     @Override
     public void stopMotor() {
-        WebSocketCapsule capsule = new WebSocketCapsule("STOP_MOTOR", null);
+        WebSocketCapsule capsule = new WebSocketCapsule("STOP_MOTOR", new SetMotorSpeed(name, (byte) 0));
         webSocket.send(capsule.toJson());
     }
 

@@ -7,4 +7,9 @@
         android:icon="@drawable/ic_search_white_24dp"
         android:title="Connect device"
         app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/log_out"
+        android:title="Log Out"
+        app:showAsAction="ifRoom" />
 </menu>

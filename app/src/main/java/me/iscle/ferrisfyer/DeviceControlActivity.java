@@ -1,33 +1,46 @@
 package me.iscle.ferrisfyer;
 
+import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.ramotion.fluidslider.FluidSlider;
 
 import kotlin.Unit;
 import me.iscle.ferrisfyer.activity.BaseAppCompatActivity;
+import me.iscle.ferrisfyer.activity.BtDeviceChooserActivity;
 import me.iscle.ferrisfyer.activity.LoginActivity;
+import me.iscle.ferrisfyer.activity.MainActivity;
 import me.iscle.ferrisfyer.model.Device;
 
 public class DeviceControlActivity extends BaseAppCompatActivity implements ServiceConnection, View.OnClickListener {
     private static final String TAG = "DeviceControlActivity";
 
-    private final int REQUEST_LOGIN = 1;
+    private static final int REQUEST_ENABLE_BT = 1;
+    private static final int REQUEST_CHOOSE_BT_DEVICE = 2;
+    private static final int REQUEST_LOGIN = 3;
 
     private TextView serverConnectionStatus;
     private TextView connectionStatus;
@@ -47,6 +60,7 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
     private TextView powerCount;
 
     private FluidSlider slider;
+    private byte lastSliderValue = -1;
 
     private IDeviceControl deviceControl;
 
@@ -82,7 +96,11 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
         startMotor.setOnClickListener(this);
         stopMotor.setOnClickListener(this);
         slider.setPositionListener(aFloat -> {
-            deviceControl.startMotor((byte) (aFloat * 100));
+            byte value = (byte) (aFloat * 100);
+            if (lastSliderValue != value) {
+                deviceControl.startMotor(value);
+                lastSliderValue = value;
+            }
             return Unit.INSTANCE;
         });
 
@@ -92,6 +110,16 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
             remoteControl.setVisibility(View.VISIBLE);
             Intent serviceIntent = new Intent(this, BLEService.class);
             bindService(serviceIntent, this, BIND_AUTO_CREATE);
+
+            if (BluetoothAdapter.getDefaultAdapter() == null || !isBluetoothLeSupported()) {
+                Toast.makeText(this, "Bluetooth Low Energy is not supported in your device!", Toast.LENGTH_LONG).show();
+                finish();
+                return;
+            }
+
+            if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
+                requestEnableBluetooth();
+            }
         } else if (mode == App.Mode.REMOTE) {
             setTitle("Remote mode - Ferrisfyer");
             remoteControl.setVisibility(View.GONE);
@@ -102,7 +130,35 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
         } else {
             throw new RuntimeException("Invalid mode!");
         }
+
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Constants.ACTION_WEBSOCKET_CONNECTED);
+        intentFilter.addAction(Constants.ACTION_WEBSOCKET_DISCONNECTED);
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter);
     }
+
+    private void requestEnableBluetooth() {
+        Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+        startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+    }
+
+    private boolean isBluetoothLeSupported() {
+        return getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
+    }
+
+    private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (intent.getAction()) {
+                case Constants.ACTION_WEBSOCKET_CONNECTED:
+                    setServerConnectionStatus(1);
+                    break;
+                case Constants.ACTION_WEBSOCKET_DISCONNECTED:
+                    setServerConnectionStatus(0);
+                    break;
+            }
+        }
+    };
 
     private void showSelectUserDialog() {
         View view = LayoutInflater.from(this).inflate(R.layout.user_dialog, null);
@@ -133,10 +189,13 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
 
     @Override
     protected void onDestroy() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
         if (getApp().getMode() == App.Mode.LOCAL) {
             unbindService(this);
         } else if (getApp().getMode() == App.Mode.REMOTE) {
-            ((WebSocketManager) deviceControl).stopRemoteControl();
+            if (deviceControl != null) {
+                ((WebSocketManager) deviceControl).stopRemoteControl();
+            }
         }
         super.onDestroy();
     }
@@ -182,8 +241,14 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
+        if (getApp().getMode() == App.Mode.LOCAL) {
+            MenuItem item = menu.findItem(R.id.log_out);
+            item.setVisible(false);
+        }
         return true;
     }
+
+
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder binder) {
@@ -230,10 +295,10 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.start_motor:
-
+                deviceControl.startMotor((byte) (slider.getPosition() * 100));
                 break;
             case R.id.stop_motor:
-
+                deviceControl.stopMotor();
                 break;
             case R.id.remote_control:
                 if (service.getWebSocket() != null) {
@@ -248,6 +313,30 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
     }
 
     @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.log_out:
+                SharedPreferences sharedPreferences = getSharedPreferences("me.iscle.ferrisfyer.LoginPreferences", Context.MODE_PRIVATE);
+                SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
+                sharedPreferencesEditor.putBoolean("keep_logged_in", false);
+                sharedPreferencesEditor.remove("password");
+                sharedPreferencesEditor.apply();
+            case android.R.id.home:
+                Intent i = new Intent(this, MainActivity.class);
+                startActivity(i);
+                finish();
+                return true;
+            case R.id.connect_device:
+                Intent i2 = new Intent(this, BtDeviceChooserActivity.class);
+                startActivityForResult(i2, REQUEST_CHOOSE_BT_DEVICE);
+                return true;
+        }
+
+
+        return false;
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
@@ -257,6 +346,15 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
                 if (service != null) {
                     service.startRemoteControl();
                 }
+            }
+        } else if (requestCode == REQUEST_ENABLE_BT) {
+            if (resultCode != RESULT_OK) {
+                Toast.makeText(this, "Bluetooth is required for this app to work!", Toast.LENGTH_LONG).show();
+                finish();
+            }
+        } else if (requestCode == REQUEST_CHOOSE_BT_DEVICE) {
+            if (resultCode == RESULT_OK) {
+                service.connectDevice(data.getStringExtra("device_address"));
             }
         }
     }
