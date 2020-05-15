@@ -29,7 +29,6 @@ import java.util.TimerTask;
 
 import me.iscle.ferrisfyer.activity.LocalControlActivity;
 import me.iscle.ferrisfyer.model.Device;
-import me.iscle.ferrisfyer.model.SetMotorSpeed;
 import me.iscle.ferrisfyer.model.WebSocketCapsule;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -90,7 +89,7 @@ public class BLEService extends Service implements IDeviceControl {
     private LocalBroadcastManager localBroadcastManager;
     private BluetoothGatt gatt;
     private int state;
-    private Timer rssiTimer;
+    private Timer timer;
     private Device device;
     private int deviceMode; // TODO: Find what this is for lol
     private WebSocket webSocket;
@@ -126,15 +125,14 @@ public class BLEService extends Service implements IDeviceControl {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothGatt.STATE_CONNECTED) {
-                if (rssiTimer != null) rssiTimer.cancel();
+                if (timer != null) timer.cancel();
                 gatt.discoverServices();
                 state = STATE_CONNECTED;
-                rssiTimer = new Timer();
-                rssiTimer.schedule(rssiTimerTask, 0, 2500);
+                timer.schedule(rssiTimerTask, 0, 2500);
                 sendLocalBroadcast(ACTION_GATT_DEVICE_CONNECTED);
                 updateNotification(createNotification("Connected to " + gatt.getDevice().getAddress(), "Tap to open the app"));
             } else {
-                if (rssiTimer != null) rssiTimer.cancel();
+                if (timer != null) timer.cancel();
                 state = STATE_DISCONNECTED;
                 sendLocalBroadcast(ACTION_GATT_DEVICE_DISCONNECTED);
                 updateNotification(createNotification("Waiting for connection...", "Tap to open the app"));
@@ -180,6 +178,15 @@ public class BLEService extends Service implements IDeviceControl {
                 Intent i = new Intent(ACTION_READ_REMOTE_RSSI);
                 i.putExtra("rssi", rssi);
                 localBroadcastManager.sendBroadcast(i);
+            }
+        }
+    };
+
+    private final TimerTask batteryTimerTask = new TimerTask() {
+        @Override
+        public void run() {
+            if (isConnected()) {
+                read(batteryCharacteristic);
             }
         }
     };
@@ -253,6 +260,7 @@ public class BLEService extends Service implements IDeviceControl {
 
         startForeground(SERVICE_NOTIFICATION_ID, createNotification("Waiting for connection...", "Tap to open the app"));
 
+        timer = new Timer();
         localBroadcastManager = LocalBroadcastManager.getInstance(this);
         IntentFilter filter = new IntentFilter();
         filter.addAction(App.BROADCAST_SEND_COMMAND);
@@ -380,6 +388,8 @@ public class BLEService extends Service implements IDeviceControl {
                         if (characteristicUuid.equals(CHARACTERISTIC_BATTERY)) {
                             batteryCharacteristic = characteristic;
                             read(characteristic);
+                            if (batteryTimerTask != null) batteryTimerTask.cancel();
+                            timer.schedule(batteryTimerTask, 0, 2500);
                             notify(characteristic, true);
                         }
                     }

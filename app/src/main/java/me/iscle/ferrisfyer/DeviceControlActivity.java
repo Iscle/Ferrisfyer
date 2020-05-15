@@ -134,6 +134,8 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Constants.ACTION_WEBSOCKET_CONNECTED);
         intentFilter.addAction(Constants.ACTION_WEBSOCKET_DISCONNECTED);
+        intentFilter.addAction(Constants.ACTION_READ_REMOTE_INFO);
+        intentFilter.addAction(Constants.ACTION_READ_REMOTE_BATTERY);
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter);
     }
 
@@ -155,6 +157,11 @@ public class DeviceControlActivity extends BaseAppCompatActivity implements Serv
                     break;
                 case Constants.ACTION_WEBSOCKET_DISCONNECTED:
                     setServerConnectionStatus(0);
+                    break;
+                case Constants.ACTION_READ_REMOTE_INFO:
+                    setDeviceInfo(DeviceControlActivity.this.service.getDevice());
+                case Constants.ACTION_READ_REMOTE_BATTERY:
+                    batteryLevel.setText("Battery level: " + intent.getByteExtra("battery", (byte) 0) + "%");
                     break;
             }
         }
