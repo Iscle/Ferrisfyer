@@ -22,17 +22,15 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import kotlin.Unit;
-import me.iscle.ferrisfyer.activity.BaseActivity;
 import me.iscle.ferrisfyer.activity.BtDeviceChooserActivity;
-import me.iscle.ferrisfyer.activity.LoginActivity;
 import me.iscle.ferrisfyer.activity.MainActivity;
 import me.iscle.ferrisfyer.databinding.ActivityDeviceControlBinding;
 import me.iscle.ferrisfyer.model.Device;
 
-public class DeviceControlActivity extends BaseActivity implements ServiceConnection, View.OnClickListener {
+public class DeviceControlActivity extends AppCompatActivity implements ServiceConnection, View.OnClickListener {
     private static final String TAG = "DeviceControlActivity";
 
     private static final int REQUEST_ENABLE_BT = 1;
@@ -324,5 +322,9 @@ public class DeviceControlActivity extends BaseActivity implements ServiceConnec
                 service.connectDevice(data.getStringExtra("device_address"));
             }
         }
+    }
+
+    public Ferrisfyer getFerrisfyer() {
+        return (Ferrisfyer) getApplication();
     }
 }

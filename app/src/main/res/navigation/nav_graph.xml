@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph.xml"
+    app:startDestination="@id/selectModeFragment">
+
+    <fragment
+        android:id="@+id/selectModeFragment"
+        android:name="me.iscle.ferrisfyer.fragment.SelectModeFragment"
+        android:label="SelectModeFragment"
+        tools:layout="@layout/fragment_select_mode">
+        <action
+            android:id="@+id/action_selectModeFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+        <action
+            android:id="@+id/action_selectModeFragment_to_deviceControlFragment"
+            app:destination="@id/deviceControlFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="me.iscle.ferrisfyer.fragment.LoginFragment"
+        android:label="LoginFragment"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_loginFragment_to_registerFragment"
+            app:destination="@id/registerFragment" />
+        <action
+            android:id="@+id/action_loginFragment_to_deviceControlFragment"
+            app:destination="@id/deviceControlFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="me.iscle.ferrisfyer.fragment.RegisterFragment"
+        android:label="RegisterFragment"
+        tools:layout="@layout/fragment_register" />
+
+    <fragment
+        android:id="@+id/deviceControlFragment"
+        android:name="me.iscle.ferrisfyer.fragment.DeviceControlFragment"
+        android:label="DeviceControlFragment"
+        tools:layout="@layout/fragment_device_control"/>
+</navigation>

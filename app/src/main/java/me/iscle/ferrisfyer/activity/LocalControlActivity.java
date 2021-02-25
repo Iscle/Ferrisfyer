@@ -22,6 +22,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.Calendar;
@@ -33,7 +34,7 @@ import me.iscle.ferrisfyer.DeviceControlActivity;
 import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.model.Device;
 
-public class LocalControlActivity extends BaseActivity implements View.OnClickListener {
+public class LocalControlActivity extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG = "LocalControlActivity";
 
     public static final int REQUEST_ENABLE_BT = 1;

@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -26,7 +27,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.adapter.BluetoothDeviceAdapter;
 
-public class BtDeviceChooserActivity extends BaseActivity {
+public class BtDeviceChooserActivity extends AppCompatActivity {
     private static final String TAG = "BtDeviceChooserActivity";
 
     private static final int REQUEST_LOCATION_PERMISSION = 1;

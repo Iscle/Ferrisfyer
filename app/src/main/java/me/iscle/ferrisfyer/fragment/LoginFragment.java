@@ -1,48 +1,55 @@
-package me.iscle.ferrisfyer.activity;
+package me.iscle.ferrisfyer.fragment;
 
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.navigation.NavDirections;
+import androidx.navigation.fragment.NavHostFragment;
+
+import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.WebSocketManager;
-import me.iscle.ferrisfyer.databinding.ActivityLoginBinding;
+import me.iscle.ferrisfyer.activity.MainActivity;
+import me.iscle.ferrisfyer.databinding.FragmentLoginBinding;
 import me.iscle.ferrisfyer.model.WebSocketCapsule;
 
-public class LoginActivity extends BaseActivity {
-    private ActivityLoginBinding binding;
-    private ProgressDialog progressDialog;
+public class LoginFragment extends Fragment {
+    private FragmentLoginBinding binding;
     private SharedPreferences sharedPreferences;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivityLoginBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-        setResult(RESULT_CANCELED);
+        requireActivity().setTitle(R.string.login);
+    }
 
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setTitle("Connecting to server");
-        progressDialog.setMessage("Please wait...");
-        progressDialog.setCancelable(false);
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        binding = FragmentLoginBinding.inflate(inflater, container, false);
 
         binding.login.setOnClickListener(v -> doLogin());
         binding.goToRegisterTv.setOnClickListener(v -> goToRegister());
 
-        sharedPreferences = getSharedPreferences("me.iscle.ferrisfyer.LoginPreferences", Context.MODE_PRIVATE);
+        sharedPreferences = requireActivity().getSharedPreferences("me.iscle.ferrisfyer.LoginPreferences", Context.MODE_PRIVATE);
         binding.username.setText(sharedPreferences.getString("username", null));
         binding.password.setText(sharedPreferences.getString("password", null));
         binding.keepLoggedIn.setChecked(sharedPreferences.getBoolean("keep_logged_in", false));
 
-        if (!getFerrisfyer().getWebSocketManager().isOpened()) {
-            progressDialog.show();
-            getFerrisfyer().getWebSocketManager().openWebSocket(webSocketCallback);
-            return;
+        if (!((MainActivity) requireActivity()).getFerrisfyer().getWebSocketManager().isOpened()) {
+            ((MainActivity) requireActivity()).getFerrisfyer().getWebSocketManager().openWebSocket(webSocketCallback);
+        } else {
+            tryAutoLogin();
         }
 
-        tryAutoLogin();
+        return binding.getRoot();
     }
 
     private void tryAutoLogin() {
@@ -52,19 +59,15 @@ public class LoginActivity extends BaseActivity {
     }
 
     private void goToRegister() {
-        Intent registerActivityIntent = new Intent(LoginActivity.this, RegisterActivity.class);
-        startActivity(registerActivityIntent);
+        NavDirections action = LoginFragmentDirections.actionLoginFragmentToRegisterFragment();
+        NavHostFragment.findNavController(this).navigate(action);
     }
 
     private void doLogin() {
-        progressDialog.setTitle("Logging in...");
-        progressDialog.show();
-        getFerrisfyer().getWebSocketManager().send(WebSocketCapsule.getLoginJson(binding.username.getText().toString(), binding.password.getText().toString()));
+        ((MainActivity) requireActivity()).getFerrisfyer().getWebSocketManager().send(WebSocketCapsule.getLoginJson(binding.username.getText().toString(), binding.password.getText().toString()));
     }
 
     private void onLoginSuccess() {
-        progressDialog.dismiss();
-
         SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
         sharedPreferencesEditor.putBoolean("keep_logged_in", binding.keepLoggedIn.isChecked());
         sharedPreferencesEditor.putString("username", binding.username.getText().toString());
@@ -75,39 +78,36 @@ public class LoginActivity extends BaseActivity {
         }
         sharedPreferencesEditor.apply();
 
-        setResult(RESULT_OK);
-        finish();
+        NavDirections action = LoginFragmentDirections.actionLoginFragmentToDeviceControlFragment();
+        NavHostFragment.findNavController(this).navigate(action);
     }
 
     private void onLoginError(String errorString) {
-        progressDialog.dismiss();
-
         SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
         sharedPreferencesEditor.putBoolean("keep_logged_in", false);
         sharedPreferencesEditor.apply();
 
-        Toast.makeText(getApplicationContext(), errorString, Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), errorString, Toast.LENGTH_SHORT).show();
     }
 
     private final WebSocketManager.WebSocketCallback webSocketCallback = new WebSocketManager.WebSocketCallback() {
         @Override
         public void onConnect() {
-            runOnUiThread(() -> {
-                progressDialog.dismiss();
+            requireActivity().runOnUiThread(() -> {
                 tryAutoLogin();
             });
         }
 
         @Override
         public void onDisconnect() {
-            runOnUiThread(() -> {
+            requireActivity().runOnUiThread(() -> {
                 onLoginError("Disconnected from the server!");
             });
         }
 
         @Override
         public void onAuthenticateResponse(boolean success, String message) {
-            runOnUiThread(() -> {
+            requireActivity().runOnUiThread(() -> {
                 if (success) {
                     onLoginSuccess();
                 } else {
@@ -118,7 +118,7 @@ public class LoginActivity extends BaseActivity {
 
         @Override
         public void onError(String error) {
-            runOnUiThread(() -> {
+            requireActivity().runOnUiThread(() -> {
                 onLoginError(error);
             });
         }

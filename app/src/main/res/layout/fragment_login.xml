@@ -62,19 +62,21 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
                 android:orientation="horizontal">
+
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/dont_have_an_account"
-                    android:layout_marginEnd="4dp"/>
+                    android:layout_marginEnd="4dp"
+                    android:text="@string/dont_have_an_account" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/go_to_register_tv"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/colorPrimary"
-                    android:text="@string/register"/>
+                    android:text="@string/register"
+                    android:textColor="@color/colorPrimary" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
