@@ -35,7 +35,13 @@ public class DeviceControlFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentDeviceControlBinding.inflate(inflater, container, false);
 
-
         return binding.getRoot();
+    }
+
+    private void onSliderChange() {
+        // TODO: modificar dataset
+
+        binding.chart.notifyDataSetChanged();
+        binding.chart.invalidate();
     }
 }

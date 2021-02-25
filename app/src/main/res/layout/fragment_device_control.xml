@@ -1,82 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:gravity="center"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/server_connection_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Server connection status: disconnected"
-        tools:layout_editor_absoluteX="8dp"
-        tools:layout_editor_absoluteY="8dp" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <TextView
-        android:id="@+id/connection_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Connection status: disconnected"
-        tools:layout_editor_absoluteX="8dp"
-        tools:layout_editor_absoluteY="27dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-    <TextView
-        android:id="@+id/motor_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Motor status: stopped"
-        tools:layout_editor_absoluteX="8dp"
-        tools:layout_editor_absoluteY="46dp" />
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/battery_level"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Battery level: -%"
-        tools:layout_editor_absoluteX="304dp"
-        tools:layout_editor_absoluteY="8dp" />
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_marginEnd="32dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
-    <com.ramotion.fluidslider.FluidSlider
-        android:id="@+id/motor_slider"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:size="normal" />
+                <FrameLayout
+                    android:id="@+id/motor_slider_frame"
+                    android:layout_width="32dp"
+                    android:layout_height="300dp"
+                    android:layout_gravity="center"
+                    android:layout_marginEnd="16dp"
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
 
-    <TextView
-        android:id="@+id/mac"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="MAC: -"
-        tools:layout_editor_absoluteX="63dp"
-        tools:layout_editor_absoluteY="378dp" />
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/motor_slider"
+                        android:layout_width="300dp"
+                        android:layout_height="32dp"
+                        android:layout_gravity="center"
+                        android:rotation="270"
+                        android:value="50.0"
+                        android:valueFrom="0.0"
+                        android:valueTo="100.0" />
+                </FrameLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <Button
-        android:id="@+id/start_motor"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Start motor"
-        tools:layout_editor_absoluteX="54dp"
-        tools:layout_editor_absoluteY="514dp" />
-
-    <Button
-        android:id="@+id/stop_motor"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Stop motor"
-        tools:layout_editor_absoluteX="218dp"
-        tools:layout_editor_absoluteY="514dp" />
-
-    <Button
-        android:id="@+id/remote_control"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Enable remote control"
-        tools:layout_editor_absoluteX="116dp"
-        tools:layout_editor_absoluteY="203dp" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <Button
+                android:id="@+id/remote_control"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Enable remote control" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
