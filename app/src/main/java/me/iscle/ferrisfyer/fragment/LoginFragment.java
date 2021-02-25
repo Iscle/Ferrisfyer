@@ -27,13 +27,14 @@ public class LoginFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requireActivity().setTitle(R.string.login);
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentLoginBinding.inflate(inflater, container, false);
+
+        requireActivity().setTitle(R.string.login);
 
         binding.login.setOnClickListener(v -> doLogin());
         binding.goToRegisterTv.setOnClickListener(v -> goToRegister());
@@ -64,7 +65,29 @@ public class LoginFragment extends Fragment {
     }
 
     private void doLogin() {
+        if (formHasErrors()) {
+            return;
+        }
+
         ((MainActivity) requireActivity()).getFerrisfyer().getWebSocketManager().send(WebSocketCapsule.getLoginJson(binding.username.getText().toString(), binding.password.getText().toString()));
+    }
+
+    private boolean formHasErrors() {
+        boolean hasErrors = false;
+        String username = binding.username.getText().toString();
+        String password = binding.password.getText().toString();
+
+        if (username.isEmpty()) {
+            binding.username.setError(getResources().getString(R.string.field_cant_be_empty));
+            hasErrors = true;
+        }
+
+        if (password.isEmpty()) {
+            binding.password.setError(getResources().getString(R.string.field_cant_be_empty));
+            hasErrors = true;
+        }
+
+        return hasErrors;
     }
 
     private void onLoginSuccess() {

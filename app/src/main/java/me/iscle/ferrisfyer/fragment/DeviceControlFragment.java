@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment;
 
 import me.iscle.ferrisfyer.BLEService;
 import me.iscle.ferrisfyer.IDeviceControl;
+import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.databinding.FragmentDeviceControlBinding;
 
 public class DeviceControlFragment extends Fragment {
@@ -34,6 +35,10 @@ public class DeviceControlFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentDeviceControlBinding.inflate(inflater, container, false);
+
+        requireActivity().setTitle(R.string.app_name);
+
+        // TODO: IMPLEMENT
 
         return binding.getRoot();
     }

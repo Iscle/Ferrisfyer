@@ -21,13 +21,14 @@ public class RegisterFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requireActivity().setTitle(R.string.register);
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentRegisterBinding.inflate(inflater, container, false);
+
+        requireActivity().setTitle(R.string.register);
 
         binding.register.setOnClickListener(v -> doRegister());
         binding.goToLoginTv.setOnClickListener(v -> goToLogin());
@@ -40,9 +41,41 @@ public class RegisterFragment extends Fragment {
     }
 
     private void doRegister() {
-        // TODO: MIRAR QUE ELS DOS CAMPS DE PASSWORD SIGUIN IGUALS I SINO TIRAR ERROR
+        if (formHasErrors()) {
+            return;
+        }
 
         ((MainActivity) requireActivity()).getFerrisfyer().getWebSocketManager().send(WebSocketCapsule.getRegisterJson(binding.username.getText().toString(), binding.password.getText().toString()));
         goToLogin();
+    }
+
+    private boolean formHasErrors() {
+        boolean hasErrors = false;
+        String username = binding.username.getText().toString();
+        String password = binding.password.getText().toString();
+        String passwordConfirm = binding.passwordConfirm.getText().toString();
+
+        if (username.isEmpty()) {
+            binding.username.setError(getResources().getString(R.string.field_cant_be_empty));
+            hasErrors = true;
+        }
+
+        if (password.isEmpty()) {
+            binding.password.setError(getResources().getString(R.string.field_cant_be_empty));
+            hasErrors = true;
+        }
+
+        if (passwordConfirm.isEmpty()) {
+            binding.passwordConfirm.setError(getResources().getString(R.string.field_cant_be_empty));
+            hasErrors = true;
+        }
+
+        if (!password.isEmpty() && !passwordConfirm.isEmpty() && !password.equals(passwordConfirm)) {
+            binding.password.setError(getResources().getString(R.string.passwords_must_match));
+            binding.passwordConfirm.setError(getResources().getString(R.string.passwords_must_match));
+            hasErrors = true;
+        }
+
+        return hasErrors;
     }
 }

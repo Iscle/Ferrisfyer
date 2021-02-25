@@ -15,4 +15,6 @@
     <string name="register">Register</string>
     <string name="password_confirm">Confirm password</string>
     <string name="already_have_an_account">Already have an account?</string>
+    <string name="passwords_must_match">The passwords must match</string>
+    <string name="field_cant_be_empty">This field can\'t be empty</string>
 </resources>

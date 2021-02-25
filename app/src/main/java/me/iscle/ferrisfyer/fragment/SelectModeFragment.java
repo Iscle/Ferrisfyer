@@ -1,6 +1,7 @@
 package me.iscle.ferrisfyer.fragment;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,7 @@ import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
 
 import me.iscle.ferrisfyer.Ferrisfyer;
+import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.activity.MainActivity;
 import me.iscle.ferrisfyer.databinding.FragmentSelectModeBinding;
 
@@ -28,6 +30,8 @@ public class SelectModeFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentSelectModeBinding.inflate(inflater, container, false);
+
+        requireActivity().setTitle(R.string.app_name);
 
         binding.localDeviceButton.setOnClickListener(v -> {
             ((MainActivity) requireActivity()).getFerrisfyer().setMode(Ferrisfyer.Mode.LOCAL);
