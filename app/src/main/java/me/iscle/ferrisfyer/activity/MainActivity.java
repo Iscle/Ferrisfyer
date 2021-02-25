@@ -2,52 +2,49 @@ package me.iscle.ferrisfyer.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import me.iscle.ferrisfyer.App;
+import me.iscle.ferrisfyer.Ferrisfyer;
 import me.iscle.ferrisfyer.DeviceControlActivity;
-import me.iscle.ferrisfyer.R;
+import me.iscle.ferrisfyer.databinding.ActivityMainBinding;
 
-public class MainActivity extends BaseAppCompatActivity implements View.OnClickListener {
+public class MainActivity extends BaseActivity {
 
     private static final int REQUEST_REMOTE_LOGIN = 1;
+
+    private ActivityMainBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        findViewById(R.id.local_device_button).setOnClickListener(this);
-        findViewById(R.id.remote_device_button).setOnClickListener(this);
-    }
+        binding.localDeviceButton.setOnClickListener(v -> {
+            getFerrisfyer().setMode(Ferrisfyer.Mode.LOCAL);
+            Intent mainActivityIntent = new Intent(MainActivity.this, DeviceControlActivity.class);
+            startActivity(mainActivityIntent);
+            finishAffinity();
+        });
 
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.local_device_button:
-                getApp().setMode(App.Mode.LOCAL);
-                Intent mainActivityIntent = new Intent(this, DeviceControlActivity.class);
-                startActivity(mainActivityIntent);
-                finishAffinity();
-                break;
-            case R.id.remote_device_button:
-                getApp().setMode(App.Mode.REMOTE);
-                Intent loginActivityIntent = new Intent(this, LoginActivity.class);
-                startActivityForResult(loginActivityIntent, REQUEST_REMOTE_LOGIN);
-                break;
-        }
+        binding.remoteDeviceButton.setOnClickListener(v -> {
+            getFerrisfyer().setMode(Ferrisfyer.Mode.REMOTE);
+            Intent loginActivityIntent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivityForResult(loginActivityIntent, REQUEST_REMOTE_LOGIN);
+        });
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == REQUEST_REMOTE_LOGIN && resultCode == RESULT_OK) {
-            Intent i = new Intent(this, DeviceControlActivity.class);
-            startActivity(i);
-            finishAffinity();
+        if (requestCode == REQUEST_REMOTE_LOGIN) {
+            if (resultCode == RESULT_OK) {
+                Intent i = new Intent(this, DeviceControlActivity.class);
+                startActivity(i);
+                finishAffinity();
+            }
         }
     }
 }

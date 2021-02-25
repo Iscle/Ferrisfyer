@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/server_connection_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Server connection status: disconnected"
+        tools:layout_editor_absoluteX="8dp"
+        tools:layout_editor_absoluteY="8dp" />
+
+    <TextView
+        android:id="@+id/connection_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Connection status: disconnected"
+        tools:layout_editor_absoluteX="8dp"
+        tools:layout_editor_absoluteY="27dp" />
+
+    <TextView
+        android:id="@+id/motor_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Motor status: stopped"
+        tools:layout_editor_absoluteX="8dp"
+        tools:layout_editor_absoluteY="46dp" />
+
+    <TextView
+        android:id="@+id/battery_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Battery level: -%"
+        tools:layout_editor_absoluteX="304dp"
+        tools:layout_editor_absoluteY="8dp" />
+
+    <com.ramotion.fluidslider.FluidSlider
+        android:id="@+id/motor_slider"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:size="normal" />
+
+    <TextView
+        android:id="@+id/mac"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MAC: -"
+        tools:layout_editor_absoluteX="63dp"
+        tools:layout_editor_absoluteY="378dp" />
+
+    <Button
+        android:id="@+id/start_motor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start motor"
+        tools:layout_editor_absoluteX="54dp"
+        tools:layout_editor_absoluteY="514dp" />
+
+    <Button
+        android:id="@+id/stop_motor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Stop motor"
+        tools:layout_editor_absoluteX="218dp"
+        tools:layout_editor_absoluteY="514dp" />
+
+    <Button
+        android:id="@+id/remote_control"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enable remote control"
+        tools:layout_editor_absoluteX="116dp"
+        tools:layout_editor_absoluteY="203dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

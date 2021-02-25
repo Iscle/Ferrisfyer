@@ -33,7 +33,7 @@ import me.iscle.ferrisfyer.DeviceControlActivity;
 import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.model.Device;
 
-public class LocalControlActivity extends BaseAppCompatActivity implements View.OnClickListener {
+public class LocalControlActivity extends BaseActivity implements View.OnClickListener {
     private static final String TAG = "LocalControlActivity";
 
     public static final int REQUEST_ENABLE_BT = 1;
@@ -264,7 +264,7 @@ public class LocalControlActivity extends BaseAppCompatActivity implements View.
             case R.id.button3:
                 if (bound) {
                     //bleService.onLight((byte) seekBar.getProgress());
-                    bleService.startRemoteControl();
+                    //bleService.startRemoteControl();
                 }
                 break;
             case R.id.button4:

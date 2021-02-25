@@ -1,14 +1,11 @@
 package me.iscle.ferrisfyer;
 
-import android.content.Context;
 import android.util.Log;
-
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.jetbrains.annotations.NotNull;
 
-import me.iscle.ferrisfyer.model.SetMotorSpeed;
 import me.iscle.ferrisfyer.model.WebSocketCapsule;
+import me.iscle.ferrisfyer.model.websocket.AuthenticationResponse;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -18,47 +15,40 @@ import okhttp3.WebSocketListener;
 public class WebSocketManager implements IDeviceControl {
     private static final String TAG = "WebSocketManager";
 
-    private WebSocket webSocket;
-    private String name;
-    private LocalBroadcastManager localBroadcastManager;
     private WebSocketCallback callback;
+    private WebSocket webSocket;
+    private boolean opened;
 
-    public WebSocketManager(Context context, String name) {
-        this.name = name;
-        this.localBroadcastManager = LocalBroadcastManager.getInstance(context);
-    }
-
-    public void setCallback(WebSocketCallback callback) {
+    public void openWebSocket(WebSocketCallback callback) {
         this.callback = callback;
+        openWebSocket();
     }
 
-    public void startRemoteControl() {
-        stopRemoteControl();
-
+    public void openWebSocket() {
         Request request = new Request.Builder()
-                .url("wss://ferrisfyer.selepdf.com/")
+                .url("wss://ferrisfyer.selepdf.com")
                 .build();
 
-        OkHttpClient client = new OkHttpClient();
-        webSocket = client.newWebSocket(request, webSocketListener);
-        // Trigger shutdown of the dispatcher's executor so this process can exit cleanly.
-        client.dispatcher().executorService().shutdown();
+        this.webSocket = new OkHttpClient().newWebSocket(request, webSocketListener);
     }
 
-    public void stopRemoteControl() {
+    public void closeWebSocket() {
         if (webSocket != null) {
-            webSocket.close(1000, "stopRemoteControl() called");
+            webSocket.close(1000, "Close requested by client.");
             webSocket = null;
         }
+    }
+
+    public boolean isOpened() {
+        return opened;
     }
 
     private final WebSocketListener webSocketListener = new WebSocketListener() {
         @Override
         public void onOpen(@NotNull WebSocket webSocket, @NotNull Response response) {
-            Log.d(TAG, "webSocketListener: onOpen()");
+            Log.d(TAG, "WebSocket opened!");
 
-            WebSocketCapsule capsule = new WebSocketCapsule("SET_LOCAL", false);
-            webSocket.send(capsule.toJson());
+            opened = true;
 
             if (callback != null) {
                 callback.onConnect();
@@ -67,22 +57,25 @@ public class WebSocketManager implements IDeviceControl {
 
         @Override
         public void onMessage(@NotNull WebSocket webSocket, @NotNull String text) {
-            Log.d(TAG, "webSocketListener: onMessage: text = " + text);
-            try {
-                WebSocketCapsule capsule = WebSocketCapsule.fromJson(text);
-                switch (capsule.getCommand()) {
-                    case "SET_MOTOR_SPEED":
+            Log.d(TAG, "New message: " + text);
 
-                        break;
-                }
-            } catch (Exception e) {
-                Log.d(TAG, "onMessage: wrong capsule!");
+            WebSocketCapsule capsule = WebSocketCapsule.fromJson(text);
+            switch (WebSocketCapsule.Command.fromString(capsule.command)) {
+                case REGISTER_RESPONSE:
+                case LOGIN_RESPONSE:
+                    if (callback != null) {
+                        AuthenticationResponse response = capsule.getData(AuthenticationResponse.class);
+                        callback.onAuthenticateResponse(response.status == 0, response.message);
+                    }
+                    break;
             }
+
         }
 
         @Override
         public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
-            Log.d(TAG, "webSocketListener: onClosing: code = " + code + ", reason = " + reason);
+            Log.d(TAG, "Closing. code: " + code + ", reason: " + reason);
+            opened = false;
             if (callback != null) {
                 callback.onDisconnect();
             }
@@ -90,31 +83,37 @@ public class WebSocketManager implements IDeviceControl {
 
         @Override
         public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, @org.jetbrains.annotations.Nullable Response response) {
-            Log.d(TAG, "webSocketListener: onFailure: " + t.getMessage());
+            Log.d(TAG, "Failed: " + t.getMessage());
+            opened = false;
             if (callback != null) {
-                callback.onError("onFailure()");
+                callback.onError(t.getMessage());
             }
-
-            startRemoteControl();
         }
     };
 
+    public void stopRemoteControl() {
+        if (webSocket != null) {
+            webSocket.close(1000, "stopRemoteControl() called");
+            webSocket = null;
+        }
+    }
+
     @Override
     public void startMotor(byte percent) {
-        WebSocketCapsule capsule = new WebSocketCapsule("SET_MOTOR_SPEED", new SetMotorSpeed(name, percent));
-        webSocket.send(capsule.toJson());
+        //WebSocketCapsule capsule = new WebSocketCapsule("SET_MOTOR_SPEED", new SetMotorSpeed(name, percent));
+        //webSocket.send(capsule.toJson());
     }
 
     @Override
     public void startMotor(byte percent1, byte percent2) {
-        WebSocketCapsule capsule = new WebSocketCapsule("SET_DUAL_MOTOR_SPEED", new byte[] {percent1, percent2});
-        webSocket.send(capsule.toJson());
+        //WebSocketCapsule capsule = new WebSocketCapsule("SET_DUAL_MOTOR_SPEED", new byte[] {percent1, percent2});
+        //webSocket.send(capsule.toJson());
     }
 
     @Override
     public void stopMotor() {
-        WebSocketCapsule capsule = new WebSocketCapsule("STOP_MOTOR", new SetMotorSpeed(name, (byte) 0));
-        webSocket.send(capsule.toJson());
+        //WebSocketCapsule capsule = new WebSocketCapsule("STOP_MOTOR", new SetMotorSpeed(name, (byte) 0));
+        //webSocket.send(capsule.toJson());
     }
 
     @Override
@@ -132,9 +131,14 @@ public class WebSocketManager implements IDeviceControl {
         throw new RuntimeException("Unimplemented!");
     }
 
+    public void send(String data) {
+        webSocket.send(data);
+    }
+
     public interface WebSocketCallback {
         void onConnect();
         void onDisconnect();
+        void onAuthenticateResponse(boolean success, String message);
         void onError(String error);
     }
 }

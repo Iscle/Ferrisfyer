@@ -108,10 +108,6 @@ public class BLEService extends Service implements IDeviceControl {
 
     private GattManager gattManager;
 
-    public WebSocket getWebSocket() {
-        return webSocket;
-    }
-
     private final BluetoothGattCallback callback = new BluetoothGattCallback() {
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
@@ -200,60 +196,6 @@ public class BLEService extends Service implements IDeviceControl {
         }
     };
 
-    private final WebSocketListener webSocketListener = new WebSocketListener() {
-        @Override
-        public void onOpen(@NotNull WebSocket webSocket, @NotNull Response response) {
-            Log.d(TAG, "webSocketListener: onOpen()");
-            WebSocketCapsule capsule = new WebSocketCapsule("SET_LOCAL", true);
-            webSocket.send(capsule.toJson());
-            Intent i = new Intent(Constants.ACTION_WEBSOCKET_CONNECTED);
-            LocalBroadcastManager.getInstance(BLEService.this).sendBroadcast(i);
-        }
-
-        @Override
-        public void onMessage(@NotNull WebSocket webSocket, @NotNull String text) {
-            Log.d(TAG, "webSocketListener: onMessage: text = " + text);
-            try {
-                WebSocketCapsule capsule = WebSocketCapsule.fromJson(text);
-                switch (capsule.getCommand()) {
-                    case "HACK":
-                        Log.d(TAG, "onMessage: this is a HACK!");
-                        break;
-                    case "SET_MOTOR_SPEED":
-                        byte speed = capsule.getData(byte.class);
-                        if (speed == 0) {
-                            stopMotor();
-                        } else {
-                            startMotor(speed);
-                        }
-                        break;
-                    case "SET_DUAL_MOTOR_SPEED":
-                        byte[] percents = capsule.getData(byte[].class);
-                        startMotor(percents[0], percents[1]);
-                        break;
-                    case "STOP_MOTOR":
-                        stopMotor();
-                        break;
-                }
-            } catch (Exception e) {
-                Log.d(TAG, "onMessage: wrong capsule!");
-            }
-        }
-
-        @Override
-        public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
-            Log.d(TAG, "webSocketListener: onClosing: code = " + code + ", reason = " + reason);
-            Intent i = new Intent(Constants.ACTION_WEBSOCKET_DISCONNECTED);
-            LocalBroadcastManager.getInstance(BLEService.this).sendBroadcast(i);
-        }
-
-        @Override
-        public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, @org.jetbrains.annotations.Nullable Response response) {
-            Log.d(TAG, "webSocketListener: onFailure: " + t.getMessage());
-            startRemoteControl();
-        }
-    };
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -263,7 +205,7 @@ public class BLEService extends Service implements IDeviceControl {
         timer = new Timer();
         localBroadcastManager = LocalBroadcastManager.getInstance(this);
         IntentFilter filter = new IntentFilter();
-        filter.addAction(App.BROADCAST_SEND_COMMAND);
+        filter.addAction(Ferrisfyer.BROADCAST_SEND_COMMAND);
     }
 
     public void disconnect() {
@@ -283,7 +225,7 @@ public class BLEService extends Service implements IDeviceControl {
         PendingIntent pendingIntent =
                 PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
-        Notification notification = new NotificationCompat.Builder(this, App.SERVICE_CHANNEL_ID)
+        Notification notification = new NotificationCompat.Builder(this, Ferrisfyer.SERVICE_CHANNEL_ID)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setSmallIcon(R.mipmap.ic_launcher_round)
@@ -532,7 +474,7 @@ public class BLEService extends Service implements IDeviceControl {
                         break;
                 }
                 if (webSocket != null) {
-                    webSocket.send(new WebSocketCapsule("SET_DATA", device).toJson());
+                    //webSocket.send(new WebSocketCapsule("SET_DATA", device).toJson());
                 }
                 sendLocalBroadcast(ACTION_READ_REMOTE_INFO);
                 break;
@@ -665,26 +607,6 @@ public class BLEService extends Service implements IDeviceControl {
 
     public void onLightEnd() {
         write(lightEndCharacteristic, (byte) 0);
-    }
-
-    public void startRemoteControl() {
-        stopRemoteControl();
-
-        Request request = new Request.Builder()
-                .url("wss://ferrisfyer.selepdf.com/")
-                .build();
-
-        OkHttpClient client = new OkHttpClient();
-        webSocket = client.newWebSocket(request, webSocketListener);
-        // Trigger shutdown of the dispatcher's executor so this process can exit cleanly.
-        client.dispatcher().executorService().shutdown();
-    }
-
-    public void stopRemoteControl() {
-        if (webSocket != null) {
-            webSocket.close(1000, "stopRemoteControl() called");
-            webSocket = null;
-        }
     }
 
     @Nullable

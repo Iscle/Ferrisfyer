@@ -5,11 +5,12 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.os.Build;
 
-public class App extends Application {
-    public static final String SERVICE_CHANNEL_ID = "me.iscle.ferrysfier.notification.SERVICE_CHANNEL";
-    public static final String BROADCAST_SEND_COMMAND = "me.iscle.ferrysfier.broadcast.SEND_COMMAND";
+public class Ferrisfyer extends Application {
+    public static final String SERVICE_CHANNEL_ID = "me.iscle.ferrisfyer.notification.SERVICE_CHANNEL";
+    public static final String BROADCAST_SEND_COMMAND = "me.iscle.ferrisfyer.broadcast.SEND_COMMAND";
 
     private Mode mode = Mode.UNDEFINED;
+    private WebSocketManager webSocketManager;
 
     @Override
     public void onCreate() {
@@ -35,6 +36,14 @@ public class App extends Application {
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(serviceChannel);
         }
+    }
+
+    public WebSocketManager getWebSocketManager() {
+        if (webSocketManager == null) {
+            webSocketManager = new WebSocketManager();
+        }
+
+        return webSocketManager;
     }
 
     public enum Mode {

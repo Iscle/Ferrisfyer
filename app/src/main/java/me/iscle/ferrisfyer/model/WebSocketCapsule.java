@@ -2,38 +2,61 @@ package me.iscle.ferrisfyer.model;
 
 import com.google.gson.Gson;
 
-import me.iscle.ferrisfyer.ServerManager;
+import me.iscle.ferrisfyer.model.websocket.AuthenticationRequest;
 
 public class WebSocketCapsule {
     private static final transient Gson gson = new Gson();
 
-    private String token;
-    private String command;
-    private String data;
+    public String command;
+    public String data;
 
-    public WebSocketCapsule(String command, Object data) {
-        this.token = ServerManager.getInstance().getToken();
-        this.command = command;
-        this.data = gson.toJson(data);
+    public <T> T getData(Class<T> classOfT) {
+        return gson.fromJson(data, classOfT);
+    }
+
+    public static String getRegisterJson(String username, String password) {
+        WebSocketCapsule capsule = new WebSocketCapsule();
+        capsule.command = Command.REGISTER_REQUEST.string;
+        capsule.data = gson.toJson(new AuthenticationRequest(username, password));
+        return gson.toJson(capsule);
+    }
+
+    public static String getLoginJson(String username, String password) {
+        WebSocketCapsule capsule = new WebSocketCapsule();
+        capsule.command = Command.LOGIN_REQUEST.string;
+        capsule.data = gson.toJson(new AuthenticationRequest(username, password));
+        return gson.toJson(capsule);
     }
 
     public static WebSocketCapsule fromJson(String json) {
         return gson.fromJson(json, WebSocketCapsule.class);
     }
 
-    public String getCommand() {
-        return command;
-    }
+    public enum Command {
+        REGISTER_REQUEST("register_request"),
+        REGISTER_RESPONSE("register_response"),
+        LOGIN_REQUEST("login_request"),
+        LOGIN_RESPONSE("login_response");
 
-    public <T> T getData(Class<T> type) {
-        return gson.fromJson(data, type);
-    }
+        public final String string;
 
-    public void updateToken() {
-        this.token = ServerManager.getInstance().getToken();
-    }
+        Command(String string) {
+            this.string = string;
+        }
 
-    public String toJson() {
-        return gson.toJson(this);
+        public static Command fromString(String string) {
+            switch (string) {
+                case "register_request":
+                    return REGISTER_REQUEST;
+                case "register_response":
+                    return REGISTER_RESPONSE;
+                case "login_request":
+                    return LOGIN_REQUEST;
+                case "login_response":
+                    return LOGIN_RESPONSE;
+            }
+
+            return null;
+        }
     }
 }

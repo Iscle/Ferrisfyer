@@ -26,7 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.adapter.BluetoothDeviceAdapter;
 
-public class BtDeviceChooserActivity extends BaseAppCompatActivity {
+public class BtDeviceChooserActivity extends BaseActivity {
     private static final String TAG = "BtDeviceChooserActivity";
 
     private static final int REQUEST_LOCATION_PERMISSION = 1;
