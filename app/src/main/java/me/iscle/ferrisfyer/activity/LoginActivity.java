@@ -2,6 +2,7 @@ package me.iscle.ferrisfyer.activity;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Toast;
@@ -28,7 +29,7 @@ public class LoginActivity extends BaseActivity {
         progressDialog.setCancelable(false);
 
         binding.login.setOnClickListener(v -> doLogin());
-        binding.register.setOnClickListener(v -> doRegister());
+        binding.goToRegisterTv.setOnClickListener(v -> goToRegister());
 
         sharedPreferences = getSharedPreferences("me.iscle.ferrisfyer.LoginPreferences", Context.MODE_PRIVATE);
         binding.username.setText(sharedPreferences.getString("username", null));
@@ -50,16 +51,15 @@ public class LoginActivity extends BaseActivity {
         }
     }
 
+    private void goToRegister() {
+        Intent registerActivityIntent = new Intent(LoginActivity.this, RegisterActivity.class);
+        startActivity(registerActivityIntent);
+    }
+
     private void doLogin() {
         progressDialog.setTitle("Logging in...");
         progressDialog.show();
         getFerrisfyer().getWebSocketManager().send(WebSocketCapsule.getLoginJson(binding.username.getText().toString(), binding.password.getText().toString()));
-    }
-
-    private void doRegister() {
-        progressDialog.setTitle("Registering...");
-        progressDialog.show();
-        getFerrisfyer().getWebSocketManager().send(WebSocketCapsule.getRegisterJson(binding.username.getText().toString(), binding.password.getText().toString()));
     }
 
     private void onLoginSuccess() {
