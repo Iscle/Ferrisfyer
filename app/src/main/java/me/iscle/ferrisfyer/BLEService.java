@@ -236,6 +236,7 @@ public class BLEService extends Service implements IDeviceControl {
     }
 
     public void connectDevice(String address) {
+        Log.d("BLUETOOTH", address);
         BluetoothDevice bluetoothDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(address);
         device = new Device(bluetoothDevice);
         gatt = device.getBluetoothDevice().connectGatt(this, true, callback);
