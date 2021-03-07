@@ -10,17 +10,14 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
 
 import me.iscle.ferrisfyer.R;
-import me.iscle.ferrisfyer.WebSocketManager;
-import me.iscle.ferrisfyer.activity.MainActivity;
+import me.iscle.ferrisfyer.ServerManager;
 import me.iscle.ferrisfyer.databinding.FragmentLoginBinding;
-import me.iscle.ferrisfyer.model.WebSocketCapsule;
 
-public class LoginFragment extends Fragment {
+public class LoginFragment extends BaseFragment {
     private FragmentLoginBinding binding;
     private SharedPreferences sharedPreferences;
 
@@ -33,30 +30,26 @@ public class LoginFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentLoginBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
 
-        requireActivity().setTitle(R.string.login);
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
         binding.login.setOnClickListener(v -> doLogin());
         binding.goToRegisterTv.setOnClickListener(v -> goToRegister());
 
-        sharedPreferences = requireActivity().getSharedPreferences("me.iscle.ferrisfyer.LoginPreferences", Context.MODE_PRIVATE);
+        sharedPreferences = getActivity().getPreferences(Context.MODE_PRIVATE);
         binding.username.setText(sharedPreferences.getString("username", null));
         binding.password.setText(sharedPreferences.getString("password", null));
         binding.keepLoggedIn.setChecked(sharedPreferences.getBoolean("keep_logged_in", false));
 
-        if (!((MainActivity) requireActivity()).getFerrisfyer().getWebSocketManager().isOpened()) {
-            ((MainActivity) requireActivity()).getFerrisfyer().getWebSocketManager().openWebSocket(webSocketCallback);
-        } else {
-            tryAutoLogin();
-        }
-
-        return binding.getRoot();
+        tryAutoLogin();
     }
 
     private void tryAutoLogin() {
-        if (sharedPreferences.getBoolean("keep_logged_in", false)) {
-            doLogin();
-        }
+        if (sharedPreferences.getBoolean("keep_logged_in", false)) doLogin();
     }
 
     private void goToRegister() {
@@ -65,23 +58,21 @@ public class LoginFragment extends Fragment {
     }
 
     private void doLogin() {
-        if (formHasErrors()) {
-            return;
-        }
+        if (formHasErrors()) return;
 
-        ((MainActivity) requireActivity()).getFerrisfyer().getWebSocketManager().send(WebSocketCapsule.getLoginJson(binding.username.getText().toString(), binding.password.getText().toString()));
+        getFerrisfyer().getServerManager().login(binding.username.getText(), binding.password.getText(), loginCallback);
     }
 
     private boolean formHasErrors() {
         boolean hasErrors = false;
-        String username = binding.username.getText().toString();
-        String password = binding.password.getText().toString();
 
+        String username = binding.username.getText().toString();
         if (username.isEmpty()) {
             binding.username.setError(getResources().getString(R.string.field_cant_be_empty));
             hasErrors = true;
         }
 
+        String password = binding.password.getText().toString();
         if (password.isEmpty()) {
             binding.password.setError(getResources().getString(R.string.field_cant_be_empty));
             hasErrors = true;
@@ -90,60 +81,30 @@ public class LoginFragment extends Fragment {
         return hasErrors;
     }
 
-    private void onLoginSuccess() {
-        SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
-        sharedPreferencesEditor.putBoolean("keep_logged_in", binding.keepLoggedIn.isChecked());
-        sharedPreferencesEditor.putString("username", binding.username.getText().toString());
-        if (binding.keepLoggedIn.isChecked()) {
-            sharedPreferencesEditor.putString("password", binding.password.getText().toString());
-        } else {
-            sharedPreferencesEditor.remove("password");
-        }
-        sharedPreferencesEditor.apply();
-
-        NavDirections action = LoginFragmentDirections.actionLoginFragmentToDeviceControlFragment();
-        NavHostFragment.findNavController(this).navigate(action);
-    }
-
-    private void onLoginError(String errorString) {
-        SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
-        sharedPreferencesEditor.putBoolean("keep_logged_in", false);
-        sharedPreferencesEditor.apply();
-
-        Toast.makeText(requireContext(), errorString, Toast.LENGTH_SHORT).show();
-    }
-
-    private final WebSocketManager.WebSocketCallback webSocketCallback = new WebSocketManager.WebSocketCallback() {
+    private final ServerManager.AuthenticationCallback loginCallback = new ServerManager.AuthenticationCallback() {
         @Override
-        public void onConnect() {
-            requireActivity().runOnUiThread(() -> {
-                tryAutoLogin();
-            });
+        public void onAuthenticationSuccess() {
+            SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
+            sharedPreferencesEditor.putBoolean("keep_logged_in", binding.keepLoggedIn.isChecked());
+            sharedPreferencesEditor.putString("username", binding.username.getText().toString());
+            if (binding.keepLoggedIn.isChecked()) {
+                sharedPreferencesEditor.putString("password", binding.password.getText().toString());
+            } else {
+                sharedPreferencesEditor.remove("password");
+            }
+            sharedPreferencesEditor.apply();
+
+            NavHostFragment.findNavController(LoginFragment.this)
+                    .navigate(LoginFragmentDirections.actionLoginFragmentToDeviceControlFragment(DeviceControlFragment.Mode.REMOTE));
         }
 
         @Override
-        public void onDisconnect() {
-            requireActivity().runOnUiThread(() -> {
-                onLoginError("Disconnected from the server!");
-            });
-        }
+        public void onAuthenticationError(String error) {
+            SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
+            sharedPreferencesEditor.putBoolean("keep_logged_in", false);
+            sharedPreferencesEditor.apply();
 
-        @Override
-        public void onAuthenticateResponse(boolean success, String message) {
-            requireActivity().runOnUiThread(() -> {
-                if (success) {
-                    onLoginSuccess();
-                } else {
-                    onLoginError(message);
-                }
-            });
-        }
-
-        @Override
-        public void onError(String error) {
-            requireActivity().runOnUiThread(() -> {
-                onLoginError(error);
-            });
+            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
         }
     };
 }

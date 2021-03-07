@@ -3,32 +3,22 @@ package me.iscle.ferrisfyer.model;
 import android.bluetooth.BluetoothDevice;
 
 public class Device {
-    private BluetoothDevice bluetoothDevice;
+    private final BluetoothDevice bluetoothDevice;
     private String mac;
-    private String sv;
-    private String hv;
     private String sn;
-    private String pid;
-    private String offlineCount;
-    private String powerCount;
+    private int rssi;
+    private byte battery;
+    private boolean dualMotor;
 
     public Device(BluetoothDevice bluetoothDevice) {
         this.bluetoothDevice = bluetoothDevice;
-        this.mac = "-";
-        this.sv = "-";
-        this.hv = "-";
-        this.sn = "-";
-        this.pid = "-";
-        this.offlineCount= "-";
-        this.powerCount = "-";
+        this.rssi = -1;
+        this.battery = -1;
+        this.dualMotor = false;
     }
 
     public BluetoothDevice getBluetoothDevice() {
         return bluetoothDevice;
-    }
-
-    public void setBluetoothDevice(BluetoothDevice bluetoothDevice) {
-        this.bluetoothDevice = bluetoothDevice;
     }
 
     public String getMac() {
@@ -39,22 +29,6 @@ public class Device {
         this.mac = mac;
     }
 
-    public String getSv() {
-        return sv;
-    }
-
-    public void setSv(String sv) {
-        this.sv = sv;
-    }
-
-    public String getHv() {
-        return hv;
-    }
-
-    public void setHv(String hv) {
-        this.hv = hv;
-    }
-
     public String getSn() {
         return sn;
     }
@@ -63,40 +37,36 @@ public class Device {
         this.sn = sn;
     }
 
-    public String getPid() {
-        return pid;
+    public int getRssi() {
+        return rssi;
     }
 
-    public void setPid(String pid) {
-        this.pid = pid;
+    public void setRssi(int rssi) {
+        this.rssi = rssi;
     }
 
-    public String getOfflineCount() {
-        return offlineCount;
+    public byte getBattery() {
+        return battery;
     }
 
-    public void setOfflineCount(String offlineCount) {
-        this.offlineCount = offlineCount;
+    public void setBattery(byte battery) {
+        this.battery = battery;
     }
 
-    public String getPowerCount() {
-        return powerCount;
+    public boolean isDualMotor() {
+        return dualMotor;
     }
 
-    public void setPowerCount(String powerCount) {
-        this.powerCount = powerCount;
+    public void setDualMotor(boolean dualMotor) {
+        this.dualMotor = dualMotor;
     }
 
     @Override
     public String toString() {
         return "Device{" +
+                "bluetoothDevice=" + bluetoothDevice +
                 ", mac='" + mac + '\'' +
-                ", sv='" + sv + '\'' +
-                ", hv='" + hv + '\'' +
-                ", sn='" + sn + '\'' +
-                ", pid='" + pid + '\'' +
-                ", offlineCount='" + offlineCount + '\'' +
-                ", powerCount='" + powerCount + '\'' +
+                ", rssi=" + rssi +
                 '}';
     }
 }

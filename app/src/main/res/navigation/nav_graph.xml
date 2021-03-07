@@ -8,7 +8,7 @@
     <fragment
         android:id="@+id/selectModeFragment"
         android:name="me.iscle.ferrisfyer.fragment.SelectModeFragment"
-        android:label="SelectModeFragment"
+        android:label="Mode selection"
         tools:layout="@layout/fragment_select_mode">
         <action
             android:id="@+id/action_selectModeFragment_to_loginFragment"
@@ -21,7 +21,7 @@
     <fragment
         android:id="@+id/loginFragment"
         android:name="me.iscle.ferrisfyer.fragment.LoginFragment"
-        android:label="LoginFragment"
+        android:label="Login"
         tools:layout="@layout/fragment_login">
         <action
             android:id="@+id/action_loginFragment_to_registerFragment"
@@ -34,12 +34,16 @@
     <fragment
         android:id="@+id/registerFragment"
         android:name="me.iscle.ferrisfyer.fragment.RegisterFragment"
-        android:label="RegisterFragment"
+        android:label="Register"
         tools:layout="@layout/fragment_register" />
 
     <fragment
         android:id="@+id/deviceControlFragment"
         android:name="me.iscle.ferrisfyer.fragment.DeviceControlFragment"
-        android:label="DeviceControlFragment"
-        tools:layout="@layout/fragment_device_control"/>
+        android:label="Device control"
+        tools:layout="@layout/fragment_device_control" >
+        <argument
+            android:name="mode"
+            app:argType="me.iscle.ferrisfyer.fragment.DeviceControlFragment$Mode" />
+    </fragment>
 </navigation>

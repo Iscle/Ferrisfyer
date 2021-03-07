@@ -11,20 +11,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static me.iscle.ferrisfyer.Constants.CLIENT_CHARACTERISTIC_CONFIG;
 
-public class GattManager {
+public class GattManager extends Thread {
     private static final String TAG = "GattManager";
 
     private BluetoothGatt gatt;
-    private ConcurrentLinkedQueue<GattOperation> queue;
     private GattOperation currentOperation;
-    private CurrentOperationTimeout currentOperationTimeout;
+    private final ConcurrentLinkedQueue<GattOperation> queue;
+    private boolean running;
 
-
-    public GattManager(BluetoothGatt gatt) {
-        this.gatt = gatt;
-        queue = new ConcurrentLinkedQueue<>();
-        currentOperation = null;
-        currentOperationTimeout = null;
+    public GattManager() {
+        this.currentOperation = null;
+        this.queue = new ConcurrentLinkedQueue<>();
     }
 
     public void write(BluetoothGattCharacteristic characteristic, byte... data) {
@@ -39,81 +36,91 @@ public class GattManager {
         queue(new GattNotifyOperation(characteristic, enable));
     }
 
-    public synchronized void queue(GattOperation gattOperation) {
+    private void queue(GattOperation gattOperation) {
         queue.add(gattOperation);
-        run();
+        synchronized (this) {
+            notify();
+        }
     }
 
-    public synchronized void onCharacteristicRead(BluetoothGattCharacteristic characteristic) {
-        currentOperation = null;
-        run();
-    }
+    public void run() {
+        running = true;
 
-    public synchronized void onCharacteristicWrite(BluetoothGattCharacteristic characteristic) {
-        currentOperation = null;
-        run();
-    }
-
-    public synchronized void run() {
-        while (true) {
-            if (currentOperation != null) {
-                Log.d(TAG, "run: currentOperation != null!");
-                return;
-            }
-
+        while (running) {
             if (queue.isEmpty()) {
-                Log.d(TAG, "run: queue is empty!");
-                return;
-            }
-
-            if (currentOperationTimeout != null) {
-                currentOperationTimeout.cancel(true);
+                synchronized (this) {
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                        Log.d(TAG, "run: Queue wait got interrupted!");
+                        continue;
+                    }
+                }
             }
 
             currentOperation = queue.poll();
             currentOperation.execute(gatt);
 
             if (currentOperation.needsCallback()) {
-                currentOperationTimeout = new CurrentOperationTimeout(this);
-                currentOperationTimeout.execute();
-
-                break;
+                try {
+                    currentOperation.timeout.execute();
+                    synchronized (currentOperation.timeout) {
+                        currentOperation.timeout.wait();
+                    }
+                } catch (IllegalStateException | InterruptedException ignored) {
+                }
             }
 
             currentOperation = null;
         }
-
     }
 
-    public GattOperation getCurrentOperation() {
-        return currentOperation;
+    public void setGattAndStart(BluetoothGatt gatt) {
+        this.gatt = gatt;
+        start();
     }
 
-    public synchronized void setCurrentOperation(GattOperation currentOperation) {
-        this.currentOperation = currentOperation;
+    public void cancel() {
+        running = false;
+        synchronized (this) {
+            if (currentOperation != null && currentOperation.needsCallback())
+                currentOperation.timeout.cancel(true);
+
+            notify();
+        }
     }
 
-    public static class CurrentOperationTimeout extends AsyncTask<Void, Void, Void> {
-        private GattManager gattManager;
-
-        private CurrentOperationTimeout(GattManager gattManager) {
-            this.gattManager = gattManager;
+    public void onCharacteristicChanged(BluetoothGattCharacteristic characteristic) {
+        if (currentOperation == null ||
+                !currentOperation.characteristic.getUuid().equals(characteristic.getUuid())) {
+            return;
         }
 
+        currentOperation.timeout.cancel(true);
+    }
+
+    public void onCharacteristicWrite(BluetoothGattCharacteristic characteristic) {
+        if (currentOperation == null ||
+                !currentOperation.characteristic.getUuid().equals(characteristic.getUuid())) {
+            return;
+        }
+
+        currentOperation.timeout.cancel(true);
+    }
+
+    public class Timeout extends AsyncTask<Void, Void, Void> {
         @Override
         protected synchronized Void doInBackground(Void... voids) {
             try {
-                //wait(gattManager.getCurrentOperation().getTimeoutMillis());
-                wait(1000);
+                wait(500);
             } catch (InterruptedException ignored) {
             }
 
-            if (isCancelled()) {
-                return null;
+            if (!isCancelled()) {
+                synchronized (this) {
+                    notifyAll();
+                }
             }
-
-            gattManager.setCurrentOperation(null);
-            gattManager.run();
 
             return null;
         }
@@ -121,7 +128,9 @@ public class GattManager {
         @Override
         protected synchronized void onCancelled() {
             super.onCancelled();
-            notify();
+            synchronized (this) {
+                notifyAll();
+            }
         }
     }
 
@@ -142,7 +151,7 @@ public class GattManager {
     }
 
     public class GattWriteOperation extends GattOperation {
-        private byte[] data;
+        private final byte[] data;
 
         public GattWriteOperation(BluetoothGattCharacteristic characteristic, byte... data) {
             super(characteristic);
@@ -162,7 +171,7 @@ public class GattManager {
     }
 
     public class GattNotifyOperation extends GattOperation {
-        private boolean notify;
+        private final boolean notify;
 
         public GattNotifyOperation(BluetoothGattCharacteristic characteristic, boolean notify) {
             super(characteristic);
@@ -189,15 +198,15 @@ public class GattManager {
 
     private abstract class GattOperation {
         BluetoothGattCharacteristic characteristic;
+        final Timeout timeout;
 
         private GattOperation(BluetoothGattCharacteristic characteristic) {
             this.characteristic = characteristic;
+            if (needsCallback()) this.timeout = new Timeout();
+            else this.timeout = null;
         }
 
         public abstract void execute(BluetoothGatt gatt);
         public abstract boolean needsCallback();
-        public long getTimeoutMillis() {
-            return 1000;
-        }
     }
 }

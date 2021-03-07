@@ -30,19 +30,4 @@ public class Constants {
     public static final String SERVICE_PRESSURE = "00006030-0000-1000-8000-00805f9b34fb";
     public static final String SERVICE_TEMPERATURE = "00006020-0000-1000-8000-00805f9b34fb";
     public static final String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
-
-    public static final String ACTION_WEBSOCKET_CONNECTED = "me.iscle.ferrisfyer.action.WEBSOCKET_CONNECTED";
-    public static final String ACTION_WEBSOCKET_DISCONNECTED = "me.iscle.ferrisfyer.actino.WEBSOCKET_DISCONNECTED";
-
-    public static final String ACTION_GATT_DEVICE_CONNECTED = "me.iscle.ferrisfyer.action.GATT_DEVICE_CONNECTED";
-    public static final String ACTION_GATT_DEVICE_DISCONNECTED = "me.iscle.ferrisfyer.action.GATT_DEVICE_DISCONNECTED";
-    public static final String ACTION_GATT_SERVICES_DISCOVERED = "me.iscle.ferrisfyer.action.GATT_SERVICES_DISCOVERED";
-    public static final String ACTION_GATT_CHARACTERISTIC_READ = "me.iscle.ferrisfyer.action.GATT_CHARACTERISTIC_READ";
-    public static final String ACTION_GATT_CHARACTERISTIC_CHANGED = "me.iscle.ferrisfyer.action.GATT_CHARACTERISTIC_CHANGED";
-    public static final String ACTION_READ_REMOTE_RSSI = "me.iscle.ferrisfyer.action.READ_REMOTE_RSSI";
-    public static final String ACTION_READ_REMOTE_BATTERY = "me.iscle.ferrisfyer.action.READ_REMOTE_BATTERY";
-    public static final String ACTION_READ_REMOTE_PRESSURE = "me.iscle.ferrisfyer.action.READ_REMOTE_PRESSURE";
-    public static final String ACTION_READ_REMOTE_TEMPERATURE = "me.iscle.ferrisfyer.action.READ_REMOTE_TEMPERATURE";
-    public static final String ACTION_READ_REMOTE_ACCELERATION = "me.iscle.ferrisfyer.action.READ_REMOTE_ACCELERATION";
-    public static final String ACTION_READ_REMOTE_INFO = "me.iscle.ferrisfyer.action.READ_REMOTE_ACCELERATION";
 }

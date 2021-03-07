@@ -1,5 +1,6 @@
 package me.iscle.ferrisfyer.fragment;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -12,82 +13,79 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.github.mikephil.charting.data.LineData;
 import com.google.android.material.slider.Slider;
 
-import me.iscle.ferrisfyer.BLEService;
-import me.iscle.ferrisfyer.Constants;
-import me.iscle.ferrisfyer.DeviceControlActivity;
-import me.iscle.ferrisfyer.Ferrisfyer;
+import me.iscle.ferrisfyer.BleService;
+import me.iscle.ferrisfyer.IDeviceCallback;
 import me.iscle.ferrisfyer.IDeviceControl;
 import me.iscle.ferrisfyer.R;
-import me.iscle.ferrisfyer.WebSocketManager;
 import me.iscle.ferrisfyer.activity.BtDeviceChooserActivity;
-import me.iscle.ferrisfyer.activity.MainActivity;
 import me.iscle.ferrisfyer.databinding.FragmentDeviceControlBinding;
 import me.iscle.ferrisfyer.model.Device;
 
 import static android.content.Context.BIND_AUTO_CREATE;
 
-public class DeviceControlFragment extends Fragment implements ServiceConnection {
+public class DeviceControlFragment extends BaseFragment {
+    private static final String TAG = "DeviceControlFragment";
 
     private FragmentDeviceControlBinding binding;
 
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_CHOOSE_BT_DEVICE = 2;
-    private static final int REQUEST_LOGIN = 3;
 
-    private byte lastSliderValue = -1;
-    private IDeviceControl deviceControl;
+    private BleService service;
+    private Mode mode;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mode = (Mode) getArguments().get("mode");
+        if (mode == null) throw new IllegalArgumentException("Mode can't be null!");
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentDeviceControlBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
 
-        requireActivity().setTitle(R.string.app_name);
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
         // TODO: IMPLEMENT GRAPH CODE
 
-        binding.motorSlider.addOnSliderTouchListener(touchListener);
-
+        binding.motorSlider.addOnChangeListener(changeListener);
         binding.scanForDevices.setOnClickListener((v) -> {
             Intent i = new Intent(requireActivity(), BtDeviceChooserActivity.class);
             startActivityForResult(i, REQUEST_CHOOSE_BT_DEVICE);
         });
 
-        Ferrisfyer.Mode mode = ((MainActivity) requireActivity()).getFerrisfyer().getMode();
-        if (mode == Ferrisfyer.Mode.LOCAL) {
-            requireActivity().setTitle(R.string.controlling_local_device);
-            binding.remoteControl.setVisibility(View.VISIBLE);
-
-            Intent serviceIntent = new Intent(requireActivity(), BLEService.class);
-            requireActivity().bindService(serviceIntent, this, BIND_AUTO_CREATE);
-
+        if (mode == Mode.LOCAL) {
             if (BluetoothAdapter.getDefaultAdapter() == null || !isBluetoothLeSupported()) {
                 Toast.makeText(requireContext(), R.string.error_bluetooth_not_supported, Toast.LENGTH_LONG).show();
-                return binding.getRoot();
+                getActivity().finishAffinity();
+                return;
             }
 
-            if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-                requestEnableBluetooth();
-            }
-        } else if (mode == Ferrisfyer.Mode.REMOTE) {
+            if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) requestEnableBluetooth();
+
+            binding.remoteControl.setVisibility(View.VISIBLE);
+
+            Intent serviceIntent = new Intent(getContext(), BleService.class);
+            getActivity().bindService(serviceIntent, bleServiceConnection, BIND_AUTO_CREATE);
+        } else if (mode == Mode.REMOTE) {
             requireActivity().setTitle(R.string.controlling_remote_device);
             binding.remoteControl.setVisibility(View.GONE);
 
@@ -97,27 +95,53 @@ public class DeviceControlFragment extends Fragment implements ServiceConnection
         }
 
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(Constants.ACTION_WEBSOCKET_CONNECTED);
-        intentFilter.addAction(Constants.ACTION_WEBSOCKET_DISCONNECTED);
-        intentFilter.addAction(Constants.ACTION_READ_REMOTE_INFO);
-        intentFilter.addAction(Constants.ACTION_READ_REMOTE_BATTERY);
+        //intentFilter.addAction(Constants.ACTION_WEBSOCKET_CONNECTED);
+        //intentFilter.addAction(Constants.ACTION_WEBSOCKET_DISCONNECTED);
+        //intentFilter.addAction(Constants.ACTION_READ_REMOTE_INFO);
+        //intentFilter.addAction(Constants.ACTION_READ_REMOTE_BATTERY);
         LocalBroadcastManager.getInstance(requireActivity()).registerReceiver(broadcastReceiver, intentFilter);
-
-        return binding.getRoot();
     }
 
-    private final Slider.OnSliderTouchListener touchListener =
-            new Slider.OnSliderTouchListener() {
-                @Override
-                public void onStartTrackingTouch(Slider slider) {
-                    ((MainActivity) requireActivity()).service.startMotor((byte) slider.getValue());
+    private final Slider.OnChangeListener changeListener = new Slider.OnChangeListener() {
+        @Override
+        public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
+            if (fromUser) {
+                if (value == 0f) {
+                    service.stopMotor();
+                } else {
+                    service.startMotor((byte) value);
                 }
+            }
+        }
+    };
 
-                @Override
-                public void onStopTrackingTouch(Slider slider) {
+    private final IDeviceCallback deviceCallback = new IDeviceCallback() {
+        @Override
+        public void onRssiUpdated(Device device) {
 
-                }
-            };
+        }
+
+        @Override
+        public void onBatteryUpdated(Device device) {
+            binding.batteryLevel.setText(Byte.toString(device.getBattery()));
+        }
+
+        @Override
+        public void onMacUpdated(Device device) {
+
+        }
+
+        @Override
+        public void onSnUpdated(Device device) {
+
+        }
+    };
+
+    @Override
+    public void onDestroy() {
+        if (service != null) service.removeDeviceCallback(deviceCallback);
+        super.onDestroy();
+    }
 
     private void requestEnableBluetooth() {
         Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -125,14 +149,14 @@ public class DeviceControlFragment extends Fragment implements ServiceConnection
     }
 
     private boolean isBluetoothLeSupported() {
-        return requireActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
+        return getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
     }
 
     private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             switch (intent.getAction()) {
-                case Constants.ACTION_WEBSOCKET_CONNECTED:
+                /*case Constants.ACTION_WEBSOCKET_CONNECTED:
                     setServerConnectionStatus(1);
                     break;
 
@@ -143,7 +167,7 @@ public class DeviceControlFragment extends Fragment implements ServiceConnection
                 case Constants.ACTION_READ_REMOTE_INFO:
                 case Constants.ACTION_READ_REMOTE_BATTERY:
                     // binding.batteryLevel.setText(intent.getByteExtra("battery", (byte) 0));
-                    break;
+                    break;*/
             }
         }
     };
@@ -176,25 +200,29 @@ public class DeviceControlFragment extends Fragment implements ServiceConnection
         }
     }
 
-    @Override
-    public void onServiceConnected(ComponentName name, IBinder binder) {
-        ((MainActivity) requireActivity()).service = ((BLEService.BLEBinder) binder).getService();
-        if (((MainActivity) requireActivity()).getFerrisfyer().getMode() == Ferrisfyer.Mode.LOCAL) {
-            this.deviceControl = ((MainActivity) requireActivity()).service;
-            if (((MainActivity) requireActivity()).service.isConnected()) {
-                setServerConnectionStatus(1);
-                setConnectionStatus(((MainActivity) requireActivity()).service.getDeviceStatus());
-                setMotorStatus(((MainActivity) requireActivity()).service.getDeviceMotorStatus());
-            }
+    private final ServiceConnection bleServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder binder) {
+            service = ((BleService.BLEBinder) binder).getService();
+            service.setDeviceCallback(deviceCallback);
         }
-    }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            service = null;
+        }
+    };
 
     @Override
-    public void onServiceDisconnected(ComponentName name) {
-        ((MainActivity) requireActivity()).service = null;
-        if (((MainActivity) requireActivity()).getFerrisfyer().getMode() == Ferrisfyer.Mode.LOCAL) {
-            this.deviceControl = ((MainActivity) requireActivity()).service;
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (requestCode == REQUEST_CHOOSE_BT_DEVICE) {
+            if (resultCode == Activity.RESULT_OK)
+                service.connectDevice(data.getStringExtra("device_address"));
+
+            return;
         }
+
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void onSliderChange() {
@@ -202,5 +230,11 @@ public class DeviceControlFragment extends Fragment implements ServiceConnection
 
         binding.chart.notifyDataSetChanged();
         binding.chart.invalidate();
+    }
+
+    public enum Mode {
+        UNDEFINED,
+        LOCAL,
+        REMOTE
     }
 }

@@ -2,7 +2,7 @@ package me.iscle.ferrisfyer.model;
 
 import com.google.gson.Gson;
 
-import me.iscle.ferrisfyer.model.websocket.AuthenticationRequest;
+import me.iscle.ferrisfyer.model.api.AuthenticationRequest;
 
 public class WebSocketCapsule {
     private static final transient Gson gson = new Gson();
