@@ -1,5 +1,6 @@
 package me.iscle.ferrisfyer.fragment;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
@@ -9,6 +10,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -93,34 +95,31 @@ public class DeviceControlFragment extends BaseFragment {
         } else {
             throw new RuntimeException("Invalid mode!");
         }
-
-        IntentFilter intentFilter = new IntentFilter();
-        //intentFilter.addAction(Constants.ACTION_WEBSOCKET_CONNECTED);
-        //intentFilter.addAction(Constants.ACTION_WEBSOCKET_DISCONNECTED);
-        //intentFilter.addAction(Constants.ACTION_READ_REMOTE_INFO);
-        //intentFilter.addAction(Constants.ACTION_READ_REMOTE_BATTERY);
-        LocalBroadcastManager.getInstance(requireActivity()).registerReceiver(broadcastReceiver, intentFilter);
     }
 
     private final Slider.OnChangeListener changeListener = new Slider.OnChangeListener() {
         @Override
         public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
-            if (fromUser) {
-                if (value == 0f) {
-                    service.stopMotor();
-                } else {
-                    service.startMotor((byte) value);
-                }
+            if (value == 0f) {
+                service.stopMotor();
+            } else {
+                service.startMotor((byte) value);
             }
+
+            // TODO: modificar dataset
+            binding.chart.notifyDataSetChanged();
+            binding.chart.invalidate();
         }
     };
 
     private final IDeviceCallback deviceCallback = new IDeviceCallback() {
         @Override
         public void onRssiUpdated(Device device) {
-
+            int bars = WifiManager.calculateSignalLevel(device.getRssi(), 5);
+            Log.d(TAG, "onRssiUpdated: " + bars);
         }
 
+        @SuppressLint("SetTextI18n")
         @Override
         public void onBatteryUpdated(Device device) {
             binding.batteryLevel.setText(Byte.toString(device.getBattery()));
@@ -140,6 +139,7 @@ public class DeviceControlFragment extends BaseFragment {
     @Override
     public void onDestroy() {
         if (service != null) service.removeDeviceCallback(deviceCallback);
+        getActivity().unbindService(bleServiceConnection);
         super.onDestroy();
     }
 
@@ -151,26 +151,6 @@ public class DeviceControlFragment extends BaseFragment {
     private boolean isBluetoothLeSupported() {
         return getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
     }
-
-    private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            switch (intent.getAction()) {
-                /*case Constants.ACTION_WEBSOCKET_CONNECTED:
-                    setServerConnectionStatus(1);
-                    break;
-
-                case Constants.ACTION_WEBSOCKET_DISCONNECTED:
-                    setServerConnectionStatus(0);
-                    break;
-
-                case Constants.ACTION_READ_REMOTE_INFO:
-                case Constants.ACTION_READ_REMOTE_BATTERY:
-                    // binding.batteryLevel.setText(intent.getByteExtra("battery", (byte) 0));
-                    break;*/
-            }
-        }
-    };
 
     private void setServerConnectionStatus(int status) {
         if (status == 0) {
@@ -225,15 +205,7 @@ public class DeviceControlFragment extends BaseFragment {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private void onSliderChange() {
-        // TODO: modificar dataset
-
-        binding.chart.notifyDataSetChanged();
-        binding.chart.invalidate();
-    }
-
     public enum Mode {
-        UNDEFINED,
         LOCAL,
         REMOTE
     }
