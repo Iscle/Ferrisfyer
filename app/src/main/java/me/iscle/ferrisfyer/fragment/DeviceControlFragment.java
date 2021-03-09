@@ -12,6 +12,7 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -47,10 +48,13 @@ public class DeviceControlFragment extends BaseFragment {
     private BleService service;
     private Mode mode;
 
+    private Handler handler;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        handler = new Handler();
         mode = (Mode) getArguments().get("mode");
         if (mode == null) throw new IllegalArgumentException("Mode can't be null!");
     }
@@ -102,8 +106,10 @@ public class DeviceControlFragment extends BaseFragment {
         public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
             if (value == 0f) {
                 service.stopMotor();
+                handler.post(() -> binding.motorStatus.setText(R.string.stopped));
             } else {
                 service.startMotor((byte) value);
+                handler.post(() -> binding.motorStatus.setText(R.string.running));
             }
 
             // TODO: modificar dataset
@@ -122,7 +128,7 @@ public class DeviceControlFragment extends BaseFragment {
         @SuppressLint("SetTextI18n")
         @Override
         public void onBatteryUpdated(Device device) {
-            binding.batteryLevel.setText(Byte.toString(device.getBattery()));
+            handler.post(() -> binding.batteryLevel.setText(Byte.toString(device.getBattery())));
         }
 
         @Override
@@ -196,9 +202,14 @@ public class DeviceControlFragment extends BaseFragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_CHOOSE_BT_DEVICE) {
-            if (resultCode == Activity.RESULT_OK)
+            if (resultCode == Activity.RESULT_OK) {
                 service.connectDevice(data.getStringExtra("device_address"));
-
+                Toast.makeText(requireContext(), R.string.bluetooth_connected, Toast.LENGTH_LONG).show();
+                handler.post(() -> binding.connectionStatus.setText(R.string.connected));
+            } else {
+                Toast.makeText(requireContext(), R.string.bluetooth_error, Toast.LENGTH_LONG).show();
+                handler.post(() -> binding.connectionStatus.setText(R.string.disconnected));
+            }
             return;
         }
 

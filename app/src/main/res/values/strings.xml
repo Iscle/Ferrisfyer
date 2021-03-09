@@ -31,6 +31,8 @@
     <string name="running">Running</string>
     <string name="stopped">Stopped</string>
     <string name="enable_remote_control">Enable remote control</string>
+    <string name="bluetooth_connected">Connected!</string>
+    <string name="bluetooth_error">Error while attempting to connect…</string>
 
     <!-- BLUETOOTH DEVICE CHOOSER -->
     <string name="scan_for_devices">Scan for devices</string>

@@ -32,6 +32,7 @@
                     android:id="@+id/motor_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="@string/stopped"
                     android:textColor="@color/colorPrimary" />
             </LinearLayout>
 
@@ -50,6 +51,7 @@
                     android:id="@+id/connection_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="@string/disconnected"
                     android:textColor="@color/colorPrimary" />
             </LinearLayout>
 
@@ -68,6 +70,7 @@
                     android:id="@+id/server_connection_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="@string/disconnected"
                     android:textColor="@color/colorPrimary" />
             </LinearLayout>
 
