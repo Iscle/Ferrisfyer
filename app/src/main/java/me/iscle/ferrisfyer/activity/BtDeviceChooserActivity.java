@@ -89,7 +89,7 @@ public class BtDeviceChooserActivity extends AppCompatActivity {
     }
 
     private void configureRecyclerView() {
-        adapter = new BluetoothDeviceAdapter();
+        adapter = new BluetoothDeviceAdapter(BtDeviceChooserActivity.this);
         adapter.setOnItemClickListener(this::deviceClick);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));

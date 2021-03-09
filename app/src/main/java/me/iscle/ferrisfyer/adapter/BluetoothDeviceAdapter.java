@@ -1,12 +1,14 @@
 package me.iscle.ferrisfyer.adapter;
 
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -18,11 +20,12 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
 
     private List<BluetoothDevice> devices;
     private OnItemClickListener listener;
+    private Context context;
 
-    public BluetoothDeviceAdapter() {
+    public BluetoothDeviceAdapter(Context context) {
         this.devices = new ArrayList<>();
+        this.context = context;
     }
-
 
     @NonNull
     @Override
@@ -73,10 +76,16 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
         }
 
         public void setBluetoothDevice(BluetoothDevice device) {
-            if (device.getName() == null || device.getName().isEmpty())
+            if (device.getName() == null || device.getName().isEmpty()) {
                 deviceName.setText("No name");
-            else
+            } else {
                 deviceName.setText(device.getName());
+
+                if (device.getName().equals("MonsterPub")) {
+                    deviceName.setTextColor(ResourcesCompat.getColor(context.getResources(), R.color.colorPrimaryDark, null));
+                }
+            }
+
             deviceAddress.setText(device.getAddress());
 
             view.setOnClickListener(v -> {
