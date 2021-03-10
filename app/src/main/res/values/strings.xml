@@ -38,4 +38,7 @@
 
     <!-- BLUETOOTH DEVICE CHOOSER -->
     <string name="scan_for_devices">Scan for devices</string>
+
+    <!-- SEARCH -->
+    <string name="search_by_username">Search by username</string>
 </resources>

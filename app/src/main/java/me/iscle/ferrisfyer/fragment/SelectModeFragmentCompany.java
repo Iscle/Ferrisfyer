@@ -37,7 +37,8 @@ public class SelectModeFragmentCompany extends BaseFragment {
         });
 
         binding.controllerButton.setOnClickListener(v -> {
-            // TODO: go to listView fragment
+            NavHostFragment.findNavController(this)
+                    .navigate(SelectModeFragmentCompanyDirections.actionSelectModeFragmentCompanyToUserListFragment());
         });
     }
 }
