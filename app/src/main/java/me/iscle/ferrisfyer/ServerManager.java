@@ -4,6 +4,8 @@ import android.util.Log;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.charset.Charset;
+
 import me.iscle.ferrisfyer.model.WebSocketCapsule;
 import me.iscle.ferrisfyer.model.api.AuthenticationRequest;
 import me.iscle.ferrisfyer.model.api.AuthenticationResponse;
@@ -16,6 +18,7 @@ import okhttp3.WebSocketListener;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ServerManager implements IDeviceControl {
     private static final String TAG = "ServerManager";
@@ -29,6 +32,7 @@ public class ServerManager implements IDeviceControl {
     public ServerManager() {
         this.client = new OkHttpClient();
         Retrofit retrofit = new Retrofit.Builder()
+                .addConverterFactory(GsonConverterFactory.create())
                 .baseUrl("https://ferrisfyer.selepdf.com/")
                 .client(this.client)
                 .build();
@@ -126,7 +130,7 @@ public class ServerManager implements IDeviceControl {
         webSocket.send(data);
     }
 
-    public void login(CharSequence username, CharSequence password, AuthenticationCallback callback) {
+    public void login(String username, String password, AuthenticationCallback callback) {
         service.login(new AuthenticationRequest(username, password)).enqueue(new Callback<AuthenticationResponse>() {
             @Override
             public void onResponse(Call<AuthenticationResponse> call, retrofit2.Response<AuthenticationResponse> response) {
@@ -144,7 +148,7 @@ public class ServerManager implements IDeviceControl {
         });
     }
 
-    public void register(CharSequence username, CharSequence password, AuthenticationCallback callback) {
+    public void register(String username, String password, AuthenticationCallback callback) {
         service.register(new AuthenticationRequest(username, password)).enqueue(new Callback<AuthenticationResponse>() {
             @Override
             public void onResponse(Call<AuthenticationResponse> call, retrofit2.Response<AuthenticationResponse> response) {

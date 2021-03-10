@@ -1,10 +1,10 @@
 package me.iscle.ferrisfyer.model.api;
 
 public class AuthenticationRequest {
-    CharSequence username;
-    CharSequence password;
+    String username;
+    String password;
 
-    public AuthenticationRequest(CharSequence username, CharSequence password) {
+    public AuthenticationRequest(String username, String password) {
         this.username = username;
         this.password = password;
     }

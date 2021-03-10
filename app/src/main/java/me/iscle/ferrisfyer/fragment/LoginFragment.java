@@ -60,7 +60,7 @@ public class LoginFragment extends BaseFragment {
     private void doLogin() {
         if (formHasErrors()) return;
 
-        getFerrisfyer().getServerManager().login(binding.username.getText(), binding.password.getText(), loginCallback);
+        getFerrisfyer().getServerManager().login(binding.username.getText().toString(), binding.password.getText().toString(), loginCallback);
     }
 
     private boolean formHasErrors() {

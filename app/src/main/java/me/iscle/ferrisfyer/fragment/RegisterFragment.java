@@ -39,7 +39,7 @@ public class RegisterFragment extends BaseFragment {
     private void doRegister() {
         if (formHasErrors()) return;
 
-        getFerrisfyer().getServerManager().register(binding.username.getText(), binding.password.getText(), registerCallback);
+        getFerrisfyer().getServerManager().register(binding.username.getText().toString(), binding.password.getText().toString(), registerCallback);
     }
 
     private boolean formHasErrors() {
