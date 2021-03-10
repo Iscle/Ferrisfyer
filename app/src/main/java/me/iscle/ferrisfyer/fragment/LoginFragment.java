@@ -60,10 +60,7 @@ public class LoginFragment extends BaseFragment {
     private void doLogin() {
         if (formHasErrors()) return;
 
-        NavHostFragment.findNavController(LoginFragment.this)
-                .navigate(LoginFragmentDirections.actionLoginFragmentToSelectModeFragmentCompany());
-
-        // getFerrisfyer().getServerManager().login(binding.username.getText().toString(), binding.password.getText().toString(), loginCallback);
+        getFerrisfyer().getServerManager().login(binding.username.getText().toString(), binding.password.getText().toString(), loginCallback);
     }
 
     private boolean formHasErrors() {

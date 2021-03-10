@@ -49,7 +49,7 @@ public class DeviceControlFragment extends BaseFragment {
         super.onCreate(savedInstanceState);
 
         handler = new Handler();
-        mode = (Mode) getArguments().get("mode");
+        mode = (Mode) requireArguments().get("mode");
         if (mode == null) throw new IllegalArgumentException("Mode can't be null!");
     }
 
@@ -75,14 +75,14 @@ public class DeviceControlFragment extends BaseFragment {
         if (mode == Mode.LOCAL) {
             if (BluetoothAdapter.getDefaultAdapter() == null || !isBluetoothLeSupported()) {
                 Toast.makeText(requireContext(), R.string.error_bluetooth_not_supported, Toast.LENGTH_LONG).show();
-                getActivity().finishAffinity();
+                requireActivity().finishAffinity();
                 return;
             }
 
             if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) requestEnableBluetooth();
 
             Intent serviceIntent = new Intent(getContext(), BleService.class);
-            getActivity().bindService(serviceIntent, bleServiceConnection, BIND_AUTO_CREATE);
+            requireActivity().bindService(serviceIntent, bleServiceConnection, BIND_AUTO_CREATE);
         } else if (mode == Mode.REMOTE) {
             requireActivity().setTitle(R.string.controlling_remote_device);
 
@@ -95,6 +95,8 @@ public class DeviceControlFragment extends BaseFragment {
     private final Slider.OnChangeListener changeListener = new Slider.OnChangeListener() {
         @Override
         public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
+            if (!bleServiceConnection.isServiceConnected()) return;
+
             if (value == 0f) {
                 service.stopMotor();
                 handler.post(() -> binding.motorStatus.setText(R.string.stopped));
@@ -137,8 +139,8 @@ public class DeviceControlFragment extends BaseFragment {
     public void onDestroy() {
         if (service != null) service.removeDeviceCallback(deviceCallback);
 
-        if (bleServiceConnection != null && bleServiceConnection.isServiceConnected()) {
-            getActivity().unbindService(bleServiceConnection);
+        if (bleServiceConnection.isServiceConnected()) {
+            requireActivity().unbindService(bleServiceConnection);
         }
         super.onDestroy();
     }
@@ -149,35 +151,7 @@ public class DeviceControlFragment extends BaseFragment {
     }
 
     private boolean isBluetoothLeSupported() {
-        return getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
-    }
-
-    private void setServerConnectionStatus(int status) {
-        if (status == 0) {
-            binding.serverConnectionStatus.setText(R.string.disconnected);
-        } else if (status == 1) {
-            binding.serverConnectionStatus.setText(R.string.connected);
-        } else if (status == 2) {
-            binding.serverConnectionStatus.setText(R.string.reconnecting);
-        }
-    }
-
-    private void setConnectionStatus(int status) {
-        if (status == 0) {
-            binding.connectionStatus.setText(R.string.disconnected);
-        } else if (status == 1) {
-            binding.connectionStatus.setText(R.string.connected);
-        } else if (status == 2) {
-            binding.connectionStatus.setText(R.string.reconnecting);
-        }
-    }
-
-    private void setMotorStatus(boolean running) {
-        if (running) {
-            binding.motorStatus.setText(R.string.running);
-        } else {
-            binding.motorStatus.setText(R.string.stopped);
-        }
+        return requireActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
     }
 
     private final ExtendedServiceConnection bleServiceConnection = new ExtendedServiceConnection() {
