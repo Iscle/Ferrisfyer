@@ -1,8 +1,11 @@
 <resources>
     <string name="app_name">Ferrisfyer</string>
+
+    <!-- SELECT MODE -->
     <string name="controlling_local_device">I\'m playing alone</string>
-    <string name="controlling_remote_device">I\'m being controlled</string>
-    <string name="role_instructions">Choose one of the following options.\nIf your device is directly connected to this phone, choose \"Local device\".\nIf you want to control someone else\'s device remotely, choose \"Remote device\".</string>
+    <string name="controlling_remote_device">\'m playing with someone</string>
+    <string name="local_device">I\'m being controlled</string>
+    <string name="remote_device">I\'m in control</string>
 
     <!-- LOGIN -->
     <string name="username">Username</string>

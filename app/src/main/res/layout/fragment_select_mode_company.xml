@@ -18,24 +18,24 @@
             android:weightSum="2">
 
             <Button
-                android:id="@+id/local_device_button"
+                android:id="@+id/controlled_button"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_margin="8dp"
                 android:layout_weight="1"
                 android:drawableBottom="@drawable/angel_white"
                 android:padding="16dp"
-                android:text="@string/controlling_local_device" />
+                android:text="@string/local_device" />
 
             <Button
-                android:id="@+id/remote_device_button"
+                android:id="@+id/controller_button"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_margin="8dp"
                 android:layout_weight="1"
                 android:drawableBottom="@drawable/angel_black"
                 android:padding="16dp"
-                android:text="@string/controlling_remote_device" />
+                android:text="@string/remote_device" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
