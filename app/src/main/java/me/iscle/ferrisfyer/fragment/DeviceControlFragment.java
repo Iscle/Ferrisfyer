@@ -3,11 +3,8 @@ package me.iscle.ferrisfyer.fragment;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
@@ -22,14 +19,11 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.github.mikephil.charting.data.LineData;
 import com.google.android.material.slider.Slider;
 
 import me.iscle.ferrisfyer.BleService;
 import me.iscle.ferrisfyer.IDeviceCallback;
-import me.iscle.ferrisfyer.IDeviceControl;
 import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.activity.BtDeviceChooserActivity;
 import me.iscle.ferrisfyer.databinding.FragmentDeviceControlBinding;
@@ -87,13 +81,10 @@ public class DeviceControlFragment extends BaseFragment {
 
             if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) requestEnableBluetooth();
 
-            binding.remoteControl.setVisibility(View.VISIBLE);
-
             Intent serviceIntent = new Intent(getContext(), BleService.class);
             getActivity().bindService(serviceIntent, bleServiceConnection, BIND_AUTO_CREATE);
         } else if (mode == Mode.REMOTE) {
             requireActivity().setTitle(R.string.controlling_remote_device);
-            binding.remoteControl.setVisibility(View.GONE);
 
             // showSelectUserDialog();
         } else {
@@ -145,7 +136,10 @@ public class DeviceControlFragment extends BaseFragment {
     @Override
     public void onDestroy() {
         if (service != null) service.removeDeviceCallback(deviceCallback);
-        getActivity().unbindService(bleServiceConnection);
+
+        if (bleServiceConnection != null && bleServiceConnection.isServiceConnected()) {
+            getActivity().unbindService(bleServiceConnection);
+        }
         super.onDestroy();
     }
 
@@ -186,7 +180,7 @@ public class DeviceControlFragment extends BaseFragment {
         }
     }
 
-    private final ServiceConnection bleServiceConnection = new ServiceConnection() {
+    private final ExtendedServiceConnection bleServiceConnection = new ExtendedServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder binder) {
             service = ((BleService.BLEBinder) binder).getService();
@@ -198,6 +192,25 @@ public class DeviceControlFragment extends BaseFragment {
             service = null;
         }
     };
+
+    private class ExtendedServiceConnection implements ServiceConnection {
+
+        private boolean isServiceConnected = false;
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            isServiceConnected = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            isServiceConnected = false;
+        }
+
+        public boolean isServiceConnected() {
+            return isServiceConnected;
+        }
+    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {

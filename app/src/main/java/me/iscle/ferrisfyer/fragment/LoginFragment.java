@@ -60,7 +60,10 @@ public class LoginFragment extends BaseFragment {
     private void doLogin() {
         if (formHasErrors()) return;
 
-        getFerrisfyer().getServerManager().login(binding.username.getText().toString(), binding.password.getText().toString(), loginCallback);
+        NavHostFragment.findNavController(LoginFragment.this)
+                .navigate(LoginFragmentDirections.actionLoginFragmentToSelectModeFragmentCompany());
+
+        // getFerrisfyer().getServerManager().login(binding.username.getText().toString(), binding.password.getText().toString(), loginCallback);
     }
 
     private boolean formHasErrors() {
@@ -95,7 +98,7 @@ public class LoginFragment extends BaseFragment {
             sharedPreferencesEditor.apply();
 
             NavHostFragment.findNavController(LoginFragment.this)
-                    .navigate(LoginFragmentDirections.actionLoginFragmentToDeviceControlFragment(DeviceControlFragment.Mode.REMOTE));
+                    .navigate(LoginFragmentDirections.actionLoginFragmentToSelectModeFragmentCompany());
         }
 
         @Override

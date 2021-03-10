@@ -3,7 +3,7 @@
 
     <!-- SELECT MODE -->
     <string name="controlling_local_device">I\'m playing alone</string>
-    <string name="controlling_remote_device">\'m playing with someone</string>
+    <string name="controlling_remote_device">I\'m playing with someone</string>
     <string name="local_device">I\'m being controlled</string>
     <string name="remote_device">I\'m in control</string>
 
@@ -33,7 +33,6 @@
     <string name="motor_status">Motor status:</string>
     <string name="running">Running</string>
     <string name="stopped">Stopped</string>
-    <string name="enable_remote_control">Enable remote control</string>
     <string name="bluetooth_connected">Connected!</string>
     <string name="bluetooth_error">Error while attempting to connect…</string>
 

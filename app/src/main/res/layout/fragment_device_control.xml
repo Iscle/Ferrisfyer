@@ -141,14 +141,6 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <Button
-                android:id="@+id/remote_control"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="@string/enable_remote_control" />
-
-            <Button
                 android:id="@+id/scan_for_devices"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"

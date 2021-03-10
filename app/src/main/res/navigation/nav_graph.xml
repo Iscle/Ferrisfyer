@@ -19,6 +19,16 @@
     </fragment>
 
     <fragment
+        android:id="@+id/selectModeFragmentCompany"
+        android:name="me.iscle.ferrisfyer.fragment.SelectModeFragmentCompany"
+        android:label="Mode selection for company"
+        tools:layout="@layout/fragment_select_mode_company">
+        <action
+            android:id="@+id/action_selectModeFragmentCompany_to_deviceControlFragment"
+            app:destination="@id/deviceControlFragment" />
+    </fragment>
+
+    <fragment
         android:id="@+id/loginFragment"
         android:name="me.iscle.ferrisfyer.fragment.LoginFragment"
         android:label="Login"
@@ -27,8 +37,8 @@
             android:id="@+id/action_loginFragment_to_registerFragment"
             app:destination="@id/registerFragment" />
         <action
-            android:id="@+id/action_loginFragment_to_deviceControlFragment"
-            app:destination="@id/deviceControlFragment" />
+            android:id="@+id/action_loginFragment_to_selectModeFragmentCompany"
+            app:destination="@id/selectModeFragmentCompany" />
     </fragment>
 
     <fragment
