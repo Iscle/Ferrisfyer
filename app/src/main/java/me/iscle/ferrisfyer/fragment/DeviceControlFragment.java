@@ -25,7 +25,6 @@ import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 
 import me.iscle.ferrisfyer.BleService;
 import me.iscle.ferrisfyer.IDeviceCallback;
@@ -33,17 +32,14 @@ import me.iscle.ferrisfyer.R;
 import me.iscle.ferrisfyer.activity.BtDeviceChooserActivity;
 import me.iscle.ferrisfyer.databinding.FragmentDeviceControlBinding;
 import me.iscle.ferrisfyer.model.Device;
-import me.iscle.ferrisfyer.model.VibrateMode;
-import me.iscle.ferrisfyer.model.VibrateModeNode;
+import me.iscle.ferrisfyer.model.VibrationMode;
 
 import static android.content.Context.BIND_AUTO_CREATE;
 
 public class DeviceControlFragment extends BaseFragment {
     private static final String TAG = "DeviceControlFragment";
 
-    private static final String START_MOTOR = "START";
-    private static final String STOP_MOTOR = "STOP";
-    private static final String SLEEP = "SLEEP";
+    private static final int SPEED = 100;
 
     private FragmentDeviceControlBinding binding;
 
@@ -85,8 +81,8 @@ public class DeviceControlFragment extends BaseFragment {
             startActivityForResult(i, REQUEST_CHOOSE_BT_DEVICE);
         });
 
-        VibrateMode vibrationMode = defineVibrationModes();
-        binding.changeModeBtn.setOnClickListener((v) -> setMode(vibrationMode));
+        VibrationMode[] vibrationModes = defineVibrationModes();
+        binding.changeModeBtn.setOnClickListener((v) -> setMode(vibrationModes[0]));
         binding.stopModeBtn.setOnClickListener((v) -> stopMode());
 
         if (mode == Mode.LOCAL) {
@@ -102,8 +98,6 @@ public class DeviceControlFragment extends BaseFragment {
             requireActivity().bindService(serviceIntent, bleServiceConnection, BIND_AUTO_CREATE);
         } else if (mode == Mode.REMOTE) {
             requireActivity().setTitle(R.string.controlling_remote_device);
-
-            // showSelectUserDialog();
         } else {
             throw new RuntimeException("Invalid mode!");
         }
@@ -125,10 +119,10 @@ public class DeviceControlFragment extends BaseFragment {
         return json;
     }
 
-    private VibrateMode defineVibrationModes() {
+    private VibrationMode[] defineVibrationModes() {
         String json = loadJSONFromAsset();
         Gson gson = new Gson();
-        VibrateMode modes = gson.fromJson(json, VibrateMode.class);
+        VibrationMode[] modes = gson.fromJson(json, VibrationMode[].class);
 
         return modes;
     }
@@ -136,7 +130,7 @@ public class DeviceControlFragment extends BaseFragment {
     private final Slider.OnChangeListener changeListener = new Slider.OnChangeListener() {
         @Override
         public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
-            if (!bleServiceConnection.isServiceConnected()) return;
+            if (!bleServiceConnection.isServiceConnected() || service == null) return;
 
             if (value == 0f) {
                 service.stopMotor();
@@ -152,8 +146,8 @@ public class DeviceControlFragment extends BaseFragment {
         }
     };
 
-    private void setMode(VibrateMode mode) {
-        if (!bleServiceConnection.isServiceConnected()) return;
+    private void setMode(VibrationMode mode) {
+        if (!bleServiceConnection.isServiceConnected() || service == null) return;
 
         if (modeThread == null) {
             binding.motorSlider.setEnabled(false);
@@ -161,14 +155,14 @@ public class DeviceControlFragment extends BaseFragment {
             modeThread = new Thread(() -> {
                 try {
                     while (true) {
-                        for (VibrateModeNode node : mode.getModeActions()) {
-                            if (node.getOperationMode().equals(START_MOTOR)) {
-                                service.startMotor((byte) node.getValue());
-                            } else if (node.getOperationMode().equals(STOP_MOTOR)) {
+                        for (byte vibrationValue : mode.getPattern()) {
+                            if (vibrationValue == 0) {
                                 service.stopMotor();
-                            } else if (node.getOperationMode().equals(SLEEP)) {
-                                Thread.sleep(node.getValue());
+                            } else {
+                                service.startMotor(vibrationValue);
                             }
+
+                            Thread.sleep(SPEED);
                         }
                     }
                 } catch (InterruptedException e) {
@@ -181,14 +175,14 @@ public class DeviceControlFragment extends BaseFragment {
     }
 
     private void stopMode() {
-        if (!bleServiceConnection.isServiceConnected()) return;
+        if (!bleServiceConnection.isServiceConnected() || service == null) return;
 
         if (modeThread != null) {
             binding.motorSlider.setEnabled(true);
 
-            service.stopMotor();
             modeThread.interrupt();
             modeThread = null;
+            service.stopMotor();
         }
     }
 

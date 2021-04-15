@@ -1,117 +1,53 @@
-{
-  "name": "Mode 1",
-  "modeActions": [
-    {
-      "operationMode": "START",
-      "value": 100
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 1500
-    },
-    {
-      "operationMode": "STOP",
-      "value": 0
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 100
-    },
-    {
-      "operationMode": "START",
-      "value": 100
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 1500
-    },
-    {
-      "operationMode": "STOP",
-      "value": 0
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 200
-    },
-    {
-      "operationMode": "START",
-      "value": 100
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 1000
-    },
-    {
-      "operationMode": "STOP",
-      "value": 0
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 100
-    },
-    {
-      "operationMode": "START",
-      "value": 100
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 1000
-    },
-    {
-      "operationMode": "STOP",
-      "value": 0
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 200
-    },
-    {
-      "operationMode": "START",
-      "value": 100
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 2000
-    },
-    {
-      "operationMode": "STOP",
-      "value": 0
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 100
-    },
-    {
-      "operationMode": "START",
-      "value": 20
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 2000
-    },
-    {
-      "operationMode": "START",
-      "value": 40
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 2000
-    },
-    {
-      "operationMode": "START",
-      "value": 60
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 2000
-    },
-    {
-      "operationMode": "START",
-      "value": 80
-    },
-    {
-      "operationMode": "SLEEP",
-      "value": 2000
-    }
-  ]
-}
+[
+  {
+    "name": "Mountain",
+    "pattern": [
+      0,
+      25,
+      50,
+      75,
+      100,
+      75,
+      50,
+      25
+    ]
+  },
+  {
+    "name": "Reduction",
+    "pattern": [
+      100,
+      75,
+      50,
+      25,
+      0,
+      75,
+      50,
+      25,
+      0
+    ]
+  },
+  {
+    "name": "uwu",
+    "pattern": [
+      100,
+      25,
+      100,
+      50,
+      10,
+      50,
+      100,
+      25,
+      100
+    ]
+  },
+  {
+    "name": "Ferrisfyer",
+    "pattern": [
+      100,
+      25,
+      60,
+      25,
+      25
+    ]
+  }
+]
