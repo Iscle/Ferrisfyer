@@ -29,4 +29,9 @@ public class VibrationMode {
     public void setPattern(byte[] pattern) {
         this.pattern = pattern;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

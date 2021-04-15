@@ -15,6 +15,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -82,8 +84,10 @@ public class DeviceControlFragment extends BaseFragment {
         });
 
         VibrationMode[] vibrationModes = defineVibrationModes();
-        binding.changeModeBtn.setOnClickListener((v) -> setMode(vibrationModes[0]));
-        binding.stopModeBtn.setOnClickListener((v) -> stopMode());
+        ArrayAdapter<VibrationMode> spinnerAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_dropdown_item, vibrationModes);
+
+        binding.vibrationModesSpn.setAdapter(spinnerAdapter);
+        binding.changeModeBtn.setOnClickListener((v) -> setMode(vibrationModes[binding.vibrationModesSpn.getSelectedItemPosition()]));
 
         if (mode == Mode.LOCAL) {
             if (BluetoothAdapter.getDefaultAdapter() == null || !isBluetoothLeSupported()) {
@@ -171,13 +175,7 @@ public class DeviceControlFragment extends BaseFragment {
             });
 
             modeThread.start();
-        }
-    }
-
-    private void stopMode() {
-        if (!bleServiceConnection.isServiceConnected() || service == null) return;
-
-        if (modeThread != null) {
+        } else {
             binding.motorSlider.setEnabled(true);
 
             modeThread.interrupt();
