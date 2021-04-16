@@ -40,7 +40,7 @@ public class LoginFragment extends BaseFragment {
         binding.login.setOnClickListener(v -> doLogin());
         binding.goToRegisterTv.setOnClickListener(v -> goToRegister());
 
-        sharedPreferences = getActivity().getPreferences(Context.MODE_PRIVATE);
+        sharedPreferences = requireActivity().getPreferences(Context.MODE_PRIVATE);
         binding.username.setText(sharedPreferences.getString("username", null));
         binding.password.setText(sharedPreferences.getString("password", null));
         binding.keepLoggedIn.setChecked(sharedPreferences.getBoolean("keep_logged_in", false));

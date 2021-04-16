@@ -16,7 +16,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -108,9 +107,9 @@ public class DeviceControlFragment extends BaseFragment {
     }
 
     private String loadJSONFromAsset() {
-        String json = null;
+        String json;
         try {
-            InputStream is = getActivity().getAssets().open("vibrationModes.json");
+            InputStream is = requireActivity().getAssets().open("vibrationModes.json");
             int size = is.available();
             byte[] buffer = new byte[size];
             is.read(buffer);
@@ -124,11 +123,7 @@ public class DeviceControlFragment extends BaseFragment {
     }
 
     private VibrationMode[] defineVibrationModes() {
-        String json = loadJSONFromAsset();
-        Gson gson = new Gson();
-        VibrationMode[] modes = gson.fromJson(json, VibrationMode[].class);
-
-        return modes;
+        return new Gson().fromJson(loadJSONFromAsset(), VibrationMode[].class);
     }
 
     private final Slider.OnChangeListener changeListener = new Slider.OnChangeListener() {
@@ -138,10 +133,8 @@ public class DeviceControlFragment extends BaseFragment {
 
             if (value == 0f) {
                 service.stopMotor();
-                handler.post(() -> binding.motorStatus.setText(R.string.stopped));
             } else {
                 service.startMotor((byte) value);
-                handler.post(() -> binding.motorStatus.setText(R.string.running));
             }
 
             // TODO: modificar dataset
@@ -249,7 +242,7 @@ public class DeviceControlFragment extends BaseFragment {
         }
     };
 
-    private class ExtendedServiceConnection implements ServiceConnection {
+    private static class ExtendedServiceConnection implements ServiceConnection {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
         }
@@ -266,13 +259,11 @@ public class DeviceControlFragment extends BaseFragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_CHOOSE_BT_DEVICE) {
-            if (resultCode == Activity.RESULT_OK) {
+            if (resultCode == Activity.RESULT_OK && data != null) {
                 service.connectDevice(data.getStringExtra("device_address"));
                 Toast.makeText(requireContext(), R.string.bluetooth_connected, Toast.LENGTH_LONG).show();
-                handler.post(() -> binding.connectionStatus.setText(R.string.connected));
             } else {
                 Toast.makeText(requireContext(), R.string.bluetooth_error, Toast.LENGTH_LONG).show();
-                handler.post(() -> binding.connectionStatus.setText(R.string.disconnected));
             }
             return;
         }

@@ -17,88 +17,37 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <LinearLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_height="wrap_content">
 
-                <com.google.android.material.textview.MaterialTextView
+                <ImageView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="4dp"
-                    android:text="@string/motor_status" />
-
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/motor_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/stopped"
-                    android:textColor="@color/colorPrimary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="4dp"
-                    android:text="@string/connection_status" />
-
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/connection_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/disconnected"
-                    android:textColor="@color/colorPrimary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="4dp"
-                    android:text="@string/server_connection_status" />
-
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/server_connection_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/disconnected"
-                    android:textColor="@color/colorPrimary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="4dp"
-                    android:text="@string/battery_level" />
+                    android:src="@drawable/ic_battery"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/battery_level"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/battery_level"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="2dp"
-                    android:text="0"
-                    android:textColor="@color/colorPrimary" />
+                    android:text="--"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/percentage"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/percentage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="%"
-                    android:textColor="@color/colorPrimary" />
-            </LinearLayout>
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
@@ -154,6 +103,11 @@
                 android:layout_marginTop="16dp"
                 android:gravity="center"
                 android:orientation="vertical">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/try_modes" />
 
                 <Spinner
                     android:id="@+id/vibration_modes_spn"

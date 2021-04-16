@@ -6,6 +6,6 @@ import me.iscle.ferrisfyer.Ferrisfyer;
 
 public class BaseFragment extends Fragment {
     public Ferrisfyer getFerrisfyer() {
-        return (Ferrisfyer) getActivity().getApplication();
+        return (Ferrisfyer) requireActivity().getApplication();
     }
 }
