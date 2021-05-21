@@ -77,10 +77,6 @@ public class DeviceControlFragment extends BaseFragment {
         // TODO: IMPLEMENT GRAPH CODE
 
         binding.motorSlider.addOnChangeListener(changeListener);
-        binding.scanForDevices.setOnClickListener((v) -> {
-            Intent i = new Intent(requireActivity(), BtDeviceChooserActivity.class);
-            startActivityForResult(i, REQUEST_CHOOSE_BT_DEVICE);
-        });
 
         VibrationMode[] vibrationModes = defineVibrationModes();
         ArrayAdapter<VibrationMode> spinnerAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_dropdown_item, vibrationModes);
@@ -99,6 +95,9 @@ public class DeviceControlFragment extends BaseFragment {
 
             Intent serviceIntent = new Intent(getContext(), BleService.class);
             requireActivity().bindService(serviceIntent, bleServiceConnection, BIND_AUTO_CREATE);
+
+            Intent i = new Intent(requireActivity(), BtDeviceChooserActivity.class);
+            startActivityForResult(i, REQUEST_CHOOSE_BT_DEVICE);
         } else if (mode == Mode.REMOTE) {
             requireActivity().setTitle(R.string.controlling_remote_device);
         } else {
