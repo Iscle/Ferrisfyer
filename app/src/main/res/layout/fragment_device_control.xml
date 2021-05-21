@@ -89,14 +89,6 @@
                 </FrameLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <Button
-                android:id="@+id/scan_for_devices"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/scan_for_devices" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"

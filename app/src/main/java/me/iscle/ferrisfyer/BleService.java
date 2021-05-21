@@ -59,10 +59,6 @@ public class BleService extends Service implements IDeviceControl {
 
     private GattManager gattManager;
 
-    public State getState() {
-        return state;
-    }
-
     private final BluetoothGattCallback callback = new BluetoothGattCallback() {
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
@@ -74,7 +70,7 @@ public class BleService extends Service implements IDeviceControl {
             switch (newState) {
                 case BluetoothGatt.STATE_DISCONNECTED:
                     state = State.DISCONNECTED;
-                    timer.cancel();
+                    //timer.cancel();
                     break;
                 case BluetoothGatt.STATE_CONNECTING:
                     state = State.CONNECTING;

@@ -2,6 +2,7 @@ package me.iscle.ferrisfyer.fragment;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -53,6 +54,8 @@ public class DeviceControlFragment extends BaseFragment {
     private Handler handler;
 
     private Thread modeThread;
+
+    private ProgressDialog progressDialog;
 
     private boolean isServiceConnected;
 
@@ -181,6 +184,10 @@ public class DeviceControlFragment extends BaseFragment {
     private final IDeviceCallback deviceCallback = new IDeviceCallback() {
         @Override
         public void onConnectionStateUpdated(BleService.State state) {
+            if (progressDialog != null) {
+                progressDialog.dismiss();
+                progressDialog = null;
+            }
             if (state == BleService.State.CONNECTED) {
                 requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(), R.string.bluetooth_connected, Toast.LENGTH_LONG).show());
             }
@@ -245,6 +252,8 @@ public class DeviceControlFragment extends BaseFragment {
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_CHOOSE_BT_DEVICE) {
             if (resultCode == Activity.RESULT_OK && data != null) {
+                progressDialog = ProgressDialog.show(requireContext(), "Please wait", "Connecting to device...");
+                progressDialog.setCancelable(false);
                 service.connectDevice(data.getStringExtra("device_address"));
             } else {
                 Toast.makeText(requireContext(), R.string.bluetooth_error, Toast.LENGTH_LONG).show();
