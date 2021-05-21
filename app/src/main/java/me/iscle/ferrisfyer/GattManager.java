@@ -18,6 +18,7 @@ public class GattManager extends Thread {
     private GattOperation currentOperation;
     private final ConcurrentLinkedQueue<GattOperation> queue;
     private boolean running;
+    private boolean currentOperationFinished;
 
     public GattManager() {
         this.currentOperation = null;
@@ -52,27 +53,23 @@ public class GattManager extends Thread {
                     try {
                         wait();
                     } catch (InterruptedException e) {
-                        Log.d(TAG, "run: Queue wait got interrupted!");
                         continue;
                     }
                 }
             }
 
             currentOperation = queue.poll();
+            currentOperationFinished = false;
             currentOperation.execute(gatt);
 
             if (currentOperation.needsCallback()) {
-                try {
-                    currentOperation.timeout.execute();
-                    synchronized (currentOperation.timeout) {
-                        currentOperation.timeout.wait();
-                    }
-                } catch (IllegalStateException | InterruptedException ignored) {
-                }
+                while (!currentOperationFinished);
             }
 
             currentOperation = null;
         }
+
+        Log.d(TAG, "run: exited gatt loop");
     }
 
     public void setGattAndStart(BluetoothGatt gatt) {
@@ -84,7 +81,7 @@ public class GattManager extends Thread {
         running = false;
         synchronized (this) {
             if (currentOperation != null && currentOperation.needsCallback())
-                currentOperation.timeout.cancel(true);
+                currentOperationFinished = true;
 
             notify();
         }
@@ -96,7 +93,7 @@ public class GattManager extends Thread {
             return;
         }
 
-        currentOperation.timeout.cancel(true);
+        currentOperationFinished = true;
     }
 
     public void onCharacteristicWrite(BluetoothGattCharacteristic characteristic) {
@@ -105,33 +102,7 @@ public class GattManager extends Thread {
             return;
         }
 
-        currentOperation.timeout.cancel(true);
-    }
-
-    public class Timeout extends AsyncTask<Void, Void, Void> {
-        @Override
-        protected synchronized Void doInBackground(Void... voids) {
-            try {
-                wait(500);
-            } catch (InterruptedException ignored) {
-            }
-
-            if (!isCancelled()) {
-                synchronized (this) {
-                    notifyAll();
-                }
-            }
-
-            return null;
-        }
-
-        @Override
-        protected synchronized void onCancelled() {
-            super.onCancelled();
-            synchronized (this) {
-                notifyAll();
-            }
-        }
+        currentOperationFinished = true;
     }
 
     public class GattReadOperation extends GattOperation {
@@ -160,6 +131,7 @@ public class GattManager extends Thread {
 
         @Override
         public void execute(BluetoothGatt gatt) {
+            // TODO: FIX CHARACTERISTIC IS NULL
             characteristic.setValue(data);
             gatt.writeCharacteristic(characteristic);
         }
@@ -198,12 +170,9 @@ public class GattManager extends Thread {
 
     private abstract class GattOperation {
         BluetoothGattCharacteristic characteristic;
-        final Timeout timeout;
 
         private GattOperation(BluetoothGattCharacteristic characteristic) {
             this.characteristic = characteristic;
-            if (needsCallback()) this.timeout = new Timeout();
-            else this.timeout = null;
         }
 
         public abstract void execute(BluetoothGatt gatt);

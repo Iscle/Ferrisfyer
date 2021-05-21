@@ -52,7 +52,7 @@ public class DeviceControlFragment extends BaseFragment {
 
     private Handler handler;
 
-    private Thread modeThread = null;
+    private Thread modeThread;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -163,17 +163,16 @@ public class DeviceControlFragment extends BaseFragment {
                         }
                     }
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Log.d(TAG, "setMode: Exiting mode thread");
                 }
             });
 
             modeThread.start();
         } else {
-            binding.motorSlider.setEnabled(true);
-
             modeThread.interrupt();
             modeThread = null;
             service.stopMotor();
+            binding.motorSlider.setEnabled(true);
         }
     }
 
