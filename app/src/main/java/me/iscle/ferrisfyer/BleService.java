@@ -282,6 +282,7 @@ public class BleService extends Service implements IDeviceControl {
     }
 
     public void startMotor(byte percent1, byte percent2) {
+        if (device == null) return;
         if (percent1 < 0) {
             percent1 = 0;
         } else if (percent1 > 100) {
@@ -302,6 +303,7 @@ public class BleService extends Service implements IDeviceControl {
     }
 
     public void stopMotor() {
+        if (device == null) return;
         if (device.isDualMotor()) {
             write(stopMotorCharacteristic, (byte) 2);
         } else {
