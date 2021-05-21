@@ -54,6 +54,8 @@ public class DeviceControlFragment extends BaseFragment {
 
     private Thread modeThread;
 
+    private boolean isServiceConnected;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,6 +97,7 @@ public class DeviceControlFragment extends BaseFragment {
 
             Intent serviceIntent = new Intent(getContext(), BleService.class);
             requireActivity().bindService(serviceIntent, bleServiceConnection, BIND_AUTO_CREATE);
+            isServiceConnected = true;
 
             Intent i = new Intent(requireActivity(), BtDeviceChooserActivity.class);
             startActivityForResult(i, REQUEST_CHOOSE_BT_DEVICE);
@@ -128,7 +131,7 @@ public class DeviceControlFragment extends BaseFragment {
     private final Slider.OnChangeListener changeListener = new Slider.OnChangeListener() {
         @Override
         public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
-            if (!bleServiceConnection.isServiceConnected() || service == null) return;
+            if (service == null) return;
 
             if (value == 0f) {
                 service.stopMotor();
@@ -143,7 +146,7 @@ public class DeviceControlFragment extends BaseFragment {
     };
 
     private void setMode(VibrationMode mode) {
-        if (!bleServiceConnection.isServiceConnected() || service == null) return;
+        if (service == null) return;
 
         if (modeThread == null) {
             binding.motorSlider.setEnabled(false);
@@ -210,7 +213,7 @@ public class DeviceControlFragment extends BaseFragment {
     public void onDestroy() {
         if (service != null) service.removeDeviceCallback(deviceCallback);
 
-        if (bleServiceConnection.isServiceConnected()) {
+        if (isServiceConnected) {
             requireActivity().unbindService(bleServiceConnection);
         }
         super.onDestroy();
@@ -225,41 +228,18 @@ public class DeviceControlFragment extends BaseFragment {
         return requireActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
     }
 
-    private final ExtendedServiceConnection bleServiceConnection = new ExtendedServiceConnection() {
-        private boolean isServiceConnected = false;
-
+    private final ServiceConnection bleServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder binder) {
-            isServiceConnected = true;
             service = ((BleService.BLEBinder) binder).getService();
             service.setDeviceCallback(deviceCallback);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            isServiceConnected = false;
             service = null;
         }
-
-        @Override
-        public boolean isServiceConnected() {
-            return isServiceConnected;
-        }
     };
-
-    private static class ExtendedServiceConnection implements ServiceConnection {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-        }
-
-        public boolean isServiceConnected() {
-            return false;
-        }
-    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
