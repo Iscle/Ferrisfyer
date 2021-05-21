@@ -89,6 +89,8 @@ public class BleService extends Service implements IDeviceControl {
                     break;
             }
 
+            if (deviceCallback != null) deviceCallback.onConnectionStateUpdated(state);
+
             updateNotification();
         }
 

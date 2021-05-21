@@ -178,6 +178,13 @@ public class DeviceControlFragment extends BaseFragment {
 
     private final IDeviceCallback deviceCallback = new IDeviceCallback() {
         @Override
+        public void onConnectionStateUpdated(BleService.State state) {
+            if (state == BleService.State.CONNECTED) {
+                requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(), R.string.bluetooth_connected, Toast.LENGTH_LONG).show());
+            }
+        }
+
+        @Override
         public void onRssiUpdated(Device device) {
             int bars = WifiManager.calculateSignalLevel(device.getRssi(), 5);
             Log.d(TAG, "onRssiUpdated: " + bars);
@@ -260,7 +267,6 @@ public class DeviceControlFragment extends BaseFragment {
         if (requestCode == REQUEST_CHOOSE_BT_DEVICE) {
             if (resultCode == Activity.RESULT_OK && data != null) {
                 service.connectDevice(data.getStringExtra("device_address"));
-                Toast.makeText(requireContext(), R.string.bluetooth_connected, Toast.LENGTH_LONG).show();
             } else {
                 Toast.makeText(requireContext(), R.string.bluetooth_error, Toast.LENGTH_LONG).show();
             }
