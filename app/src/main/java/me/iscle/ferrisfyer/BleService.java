@@ -66,10 +66,14 @@ public class BleService extends Service implements IDeviceControl {
         }
 
         @Override
-        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+        public void onConnectionStateChange(BluetoothGatt gatt2, int status, int newState) {
             switch (newState) {
                 case BluetoothGatt.STATE_DISCONNECTED:
                     state = State.DISCONNECTED;
+                    batteryCharacteristic = null;
+                    stopMotorCharacteristic = null;
+                    startSingleMotorCharacteristic = null;
+                    startDualMotorCharacteristic = null;
                     //timer.cancel();
                     break;
                 case BluetoothGatt.STATE_CONNECTING:
@@ -78,7 +82,9 @@ public class BleService extends Service implements IDeviceControl {
                 case BluetoothGatt.STATE_CONNECTED:
                     state = State.CONNECTED;
                     timer.schedule(getRssiTimerTask(), 0, 2500);
-                    gatt.discoverServices();
+                    Log.d(TAG, "onConnectionStateChange: discovering gatt services");
+                    Log.d(TAG, "onConnectionStateChange: " + gatt2.discoverServices());
+                    Log.d(TAG, "onConnectionStateChange: " + (gatt2 == gatt));
                     break;
                 case BluetoothGatt.STATE_DISCONNECTING:
                     state = State.DISCONNECTING;
@@ -92,11 +98,14 @@ public class BleService extends Service implements IDeviceControl {
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            Log.d(TAG, "onServicesDiscovered: " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 List<BluetoothGattService> gattServices = gatt.getServices();
                 if (gattServices != null && !gattServices.isEmpty()) {
                     handleServicesDiscovered(gattServices);
                     return;
+                } else {
+                    Log.d(TAG, "onServicesDiscovered: kk");
                 }
             }
 
@@ -222,6 +231,7 @@ public class BleService extends Service implements IDeviceControl {
 
     // TODO: Wait until (single motor || dual motor) && stop motor characteristics have been found
     private void handleServicesDiscovered(List<BluetoothGattService> services) {
+        Log.d(TAG, "handleServicesDiscovered: handling " + services.size() + " services");
         for (BluetoothGattService service : services) {
             switch (service.getUuid().toString()) {
                 case SERVICE_MOTOR:
@@ -280,7 +290,13 @@ public class BleService extends Service implements IDeviceControl {
     }
 
     public void startMotor(byte percent1, byte percent2) {
-        if (device == null) return;
+        if (device == null) {
+            Log.d(TAG, "startMotor: device is null");
+            return;
+        } else {
+            Log.d(TAG, "startMotor: device is not null");
+        }
+
         if (percent1 < 0) {
             percent1 = 0;
         } else if (percent1 > 100) {
@@ -301,7 +317,13 @@ public class BleService extends Service implements IDeviceControl {
     }
 
     public void stopMotor() {
-        if (device == null) return;
+        if (device == null) {
+            Log.d(TAG, "stopMotor: device is null");
+            return;
+        } else {
+            Log.d(TAG, "stopMotor: device is not null");
+        }
+
         if (device.isDualMotor()) {
             write(stopMotorCharacteristic, (byte) 2);
         } else {

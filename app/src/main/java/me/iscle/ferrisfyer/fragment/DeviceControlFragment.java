@@ -134,7 +134,12 @@ public class DeviceControlFragment extends BaseFragment {
     private final Slider.OnChangeListener changeListener = new Slider.OnChangeListener() {
         @Override
         public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
-            if (service == null) return;
+            if (service == null) {
+                Log.d(TAG, "onValueChange: service is null");
+                return;
+            } else {
+                Log.d(TAG, "onValueChange: service is not null");
+            }
 
             if (value == 0f) {
                 service.stopMotor();
