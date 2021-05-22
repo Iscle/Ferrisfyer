@@ -25,7 +25,10 @@
     <string name="error_bluetooth_not_supported">Bluetooth Low Energy is not supported in your device!</string>
     <string name="error_bluetooth_required">Bluetooth is required for this app to work!</string>
     <string name="bluetooth_connected">Connected!</string>
+    <string name="bluetooth_disconnected">Connection lost</string>
     <string name="bluetooth_error">Error while attempting to connect…</string>
+    <string name="connect_dialog_title">Please wait</string>
+    <string name="connect_dialog_content">Connecting to the device…</string>
     <string name="start_stop">Start/Stop</string>
     <string name="try_modes">Try out our pre-defined modes!</string>
 

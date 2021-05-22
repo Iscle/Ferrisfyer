@@ -10,7 +10,6 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -51,8 +50,6 @@ public class DeviceControlFragment extends BaseFragment {
     private BleService service;
     private Mode mode;
 
-    private Handler handler;
-
     private Thread modeThread;
 
     private ProgressDialog progressDialog;
@@ -63,7 +60,6 @@ public class DeviceControlFragment extends BaseFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        handler = new Handler();
         mode = (Mode) requireArguments().get("mode");
         if (mode == null) throw new IllegalArgumentException("Mode can't be null!");
     }
@@ -134,12 +130,7 @@ public class DeviceControlFragment extends BaseFragment {
     private final Slider.OnChangeListener changeListener = new Slider.OnChangeListener() {
         @Override
         public void onValueChange(@NonNull Slider slider, float value, boolean fromUser) {
-            if (service == null) {
-                Log.d(TAG, "onValueChange: service is null");
-                return;
-            } else {
-                Log.d(TAG, "onValueChange: service is not null");
-            }
+            if (service == null) return;
 
             if (value == 0f) {
                 service.stopMotor();
@@ -148,6 +139,7 @@ public class DeviceControlFragment extends BaseFragment {
             }
 
             // TODO: modificar dataset
+
             binding.chart.notifyDataSetChanged();
             binding.chart.invalidate();
         }
@@ -173,7 +165,7 @@ public class DeviceControlFragment extends BaseFragment {
                         }
                     }
                 } catch (InterruptedException e) {
-                    Log.d(TAG, "setMode: Exiting mode thread");
+                    e.printStackTrace();
                 }
             });
 
@@ -196,18 +188,23 @@ public class DeviceControlFragment extends BaseFragment {
             if (state == BleService.State.CONNECTED) {
                 requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(), R.string.bluetooth_connected, Toast.LENGTH_LONG).show());
             }
+            if (state == BleService.State.DISCONNECTED) {
+                requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(), R.string.bluetooth_disconnected, Toast.LENGTH_LONG).show());
+            }
         }
 
         @Override
         public void onRssiUpdated(Device device) {
             int bars = WifiManager.calculateSignalLevel(device.getRssi(), 5);
+            requireActivity().runOnUiThread(() -> binding.rssiLevel.setText(String.valueOf(bars)));
             Log.d(TAG, "onRssiUpdated: " + bars);
         }
 
         @SuppressLint("SetTextI18n")
         @Override
         public void onBatteryUpdated(Device device) {
-            handler.post(() -> binding.batteryLevel.setText(Byte.toString(device.getBattery())));
+            requireActivity().runOnUiThread(() -> binding.batteryLevel.setText(Byte.toString(device.getBattery())));
+            Log.d(TAG, "onBatteryUpdated: " + device.getBattery());
         }
 
         @Override
@@ -224,10 +221,8 @@ public class DeviceControlFragment extends BaseFragment {
     @Override
     public void onDestroy() {
         if (service != null) service.removeDeviceCallback(deviceCallback);
+        if (isServiceConnected) requireActivity().unbindService(bleServiceConnection);
 
-        if (isServiceConnected) {
-            requireActivity().unbindService(bleServiceConnection);
-        }
         super.onDestroy();
     }
 
@@ -257,7 +252,10 @@ public class DeviceControlFragment extends BaseFragment {
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_CHOOSE_BT_DEVICE) {
             if (resultCode == Activity.RESULT_OK && data != null) {
-                progressDialog = ProgressDialog.show(requireContext(), "Please wait", "Connecting to device...");
+                progressDialog = ProgressDialog.show(
+                        requireContext(),
+                        getResources().getString(R.string.connect_dialog_title),
+                        getResources().getString(R.string.connect_dialog_content));
                 progressDialog.setCancelable(false);
                 service.connectDevice(data.getStringExtra("device_address"));
             } else {

@@ -98,14 +98,11 @@ public class BleService extends Service implements IDeviceControl {
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            Log.d(TAG, "onServicesDiscovered: " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 List<BluetoothGattService> gattServices = gatt.getServices();
                 if (gattServices != null && !gattServices.isEmpty()) {
                     handleServicesDiscovered(gattServices);
                     return;
-                } else {
-                    Log.d(TAG, "onServicesDiscovered: kk");
                 }
             }
 
@@ -290,12 +287,7 @@ public class BleService extends Service implements IDeviceControl {
     }
 
     public void startMotor(byte percent1, byte percent2) {
-        if (device == null) {
-            Log.d(TAG, "startMotor: device is null");
-            return;
-        } else {
-            Log.d(TAG, "startMotor: device is not null");
-        }
+        if (device == null) return;
 
         if (percent1 < 0) {
             percent1 = 0;
@@ -317,12 +309,7 @@ public class BleService extends Service implements IDeviceControl {
     }
 
     public void stopMotor() {
-        if (device == null) {
-            Log.d(TAG, "stopMotor: device is null");
-            return;
-        } else {
-            Log.d(TAG, "stopMotor: device is not null");
-        }
+        if (device == null) return;
 
         if (device.isDualMotor()) {
             write(stopMotorCharacteristic, (byte) 2);
@@ -364,7 +351,6 @@ public class BleService extends Service implements IDeviceControl {
             default:
                 throw new RuntimeException();
         }
-
 
         return new NotificationCompat.Builder(this, Ferrisfyer.SERVICE_CHANNEL_ID)
                 .setContentTitle(title)
