@@ -52,8 +52,6 @@ public class DeviceControlFragment extends BaseFragment {
 
     private Thread modeThread;
 
-    private ProgressDialog progressDialog;
-
     private boolean isServiceConnected;
 
     @Override
@@ -181,10 +179,11 @@ public class DeviceControlFragment extends BaseFragment {
     private final IDeviceCallback deviceCallback = new IDeviceCallback() {
         @Override
         public void onConnectionStateUpdated(BleService.State state) {
-            if (progressDialog != null) {
-                progressDialog.dismiss();
-                progressDialog = null;
-            }
+            requireActivity().runOnUiThread(() -> {
+                binding.progressContainer.setVisibility(View.GONE);
+                binding.container.setVisibility(View.VISIBLE);
+            });
+
             if (state == BleService.State.CONNECTED) {
                 requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(), R.string.bluetooth_connected, Toast.LENGTH_LONG).show());
             }
@@ -252,11 +251,11 @@ public class DeviceControlFragment extends BaseFragment {
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_CHOOSE_BT_DEVICE) {
             if (resultCode == Activity.RESULT_OK && data != null) {
-                progressDialog = ProgressDialog.show(
-                        requireContext(),
-                        getResources().getString(R.string.connect_dialog_title),
-                        getResources().getString(R.string.connect_dialog_content));
-                progressDialog.setCancelable(false);
+                requireActivity().runOnUiThread(() -> {
+                    binding.progressContainer.setVisibility(View.VISIBLE);
+                    binding.container.setVisibility(View.GONE);
+                });
+
                 service.connectDevice(data.getStringExtra("device_address"));
             } else {
                 Toast.makeText(requireContext(), R.string.bluetooth_error, Toast.LENGTH_LONG).show();

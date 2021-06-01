@@ -6,7 +6,35 @@
     android:gravity="center"
     android:orientation="vertical">
 
+    <LinearLayout
+        android:id="@+id/progress_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/progress_title_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/connect_dialog_title" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/progress_content_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/connect_dialog_content" />
+
+    </LinearLayout>
+
     <ScrollView
+        android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
