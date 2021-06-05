@@ -2,7 +2,6 @@ package me.iscle.ferrisfyer.fragment;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -21,11 +20,19 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.android.material.slider.Slider;
 import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import me.iscle.ferrisfyer.BleService;
 import me.iscle.ferrisfyer.IDeviceCallback;
@@ -41,6 +48,7 @@ public class DeviceControlFragment extends BaseFragment {
     private static final String TAG = "DeviceControlFragment";
 
     private static final int SPEED = 100;
+    private static final int CHART_VALUES = 120;
 
     private FragmentDeviceControlBinding binding;
 
@@ -51,6 +59,7 @@ public class DeviceControlFragment extends BaseFragment {
     private Mode mode;
 
     private Thread modeThread;
+    private Thread updateDataSetThread;
 
     private boolean isServiceConnected;
 
@@ -73,7 +82,7 @@ public class DeviceControlFragment extends BaseFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // TODO: IMPLEMENT GRAPH CODE
+        initChart();
 
         binding.motorSlider.addOnChangeListener(changeListener);
 
@@ -82,6 +91,8 @@ public class DeviceControlFragment extends BaseFragment {
 
         binding.vibrationModesSpn.setAdapter(spinnerAdapter);
         binding.changeModeBtn.setOnClickListener((v) -> setMode(vibrationModes[binding.vibrationModesSpn.getSelectedItemPosition()]));
+
+        launchUpdateDataSetThread();
 
         if (mode == Mode.LOCAL) {
             if (BluetoothAdapter.getDefaultAdapter() == null || !isBluetoothLeSupported()) {
@@ -105,6 +116,105 @@ public class DeviceControlFragment extends BaseFragment {
         }
     }
 
+    private void initChart() {
+        // Hide description
+        binding.chart.getDescription().setEnabled(false);
+
+        // Hide axis labels
+        binding.chart.getAxisLeft().setDrawLabels(false);
+        binding.chart.getAxisRight().setDrawLabels(false);
+        binding.chart.getXAxis().setDrawLabels(false);
+
+        // Hide grid lines
+        binding.chart.getAxisLeft().setDrawGridLines(false);
+        binding.chart.getAxisRight().setDrawGridLines(false);
+        binding.chart.getXAxis().setDrawGridLines(false);
+
+        // Hide border and axis
+        binding.chart.setDrawBorders(false);
+        binding.chart.getAxisLeft().setDrawAxisLine(false);
+        binding.chart.getAxisRight().setDrawAxisLine(false);
+        binding.chart.getXAxis().setDrawAxisLine(false);
+
+        // Hide legend
+        binding.chart.getLegend().setEnabled(false);
+
+        // Disable touch
+        binding.chart.setTouchEnabled(false);
+
+        // Set maximum and minimum values
+        binding.chart.getAxisLeft().setAxisMaximum(100);
+        binding.chart.getAxisLeft().setAxisMinimum(0);
+        binding.chart.getAxisLeft().setSpaceTop(0);
+        binding.chart.getAxisLeft().setSpaceBottom(0);
+
+        // Create the data set
+        initDataSet();
+    }
+
+    private void initDataSet() {
+        LineDataSet set;
+
+        LinkedList<Entry> values = new LinkedList<>();
+        for (int i = 0; i < CHART_VALUES; i++) {
+            values.add(new Entry(i, 0));
+        }
+
+        int colorCode = getResources().getColor(R.color.colorPrimary);
+        set = new LineDataSet(values, "");
+        set.setDrawIcons(false);
+        set.setDrawValues(false);
+        set.setDrawCircles(false);
+
+        set.setColor(colorCode);
+        set.setCircleColor(colorCode);
+
+        set.setDrawFilled(true);
+        set.setFillFormatter((dataSet, dataProvider) -> binding.chart.getAxisLeft().getAxisMinimum());
+        set.setFillColor(colorCode);
+
+        ArrayList<ILineDataSet> datasets = new ArrayList<>();
+        datasets.add(set);
+
+        LineData data = new LineData(datasets);
+        binding.chart.setData(data);
+    }
+
+    private void updateDataSetInfo(float value) {
+        LineDataSet set = (LineDataSet) binding.chart.getData().getDataSetByIndex(0);
+        List<Entry> values = set.getValues();
+
+        List<Entry> newValues = new LinkedList<>();
+        for (int i = 0; i < CHART_VALUES - 1; i++) {
+            newValues.add(new Entry(i, values.get(i + 1).getY()));
+        }
+        newValues.add(new Entry(CHART_VALUES - 1, value));
+
+        set.setValues(newValues);
+        set.notifyDataSetChanged();
+        binding.chart.getData().notifyDataChanged();
+        binding.chart.notifyDataSetChanged();
+        binding.chart.invalidate();
+    }
+
+    private void launchUpdateDataSetThread() {
+        updateDataSetThread = new Thread(() -> {
+            try {
+                while (true) {
+                    if (binding.motorSlider.isEnabled()) {
+                        updateDataSetInfo(binding.motorSlider.getValue());
+                        Thread.sleep(50);
+                    }
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        updateDataSetThread.start();
+
+    }
+
     private String loadJSONFromAsset() {
         String json;
         try {
@@ -113,7 +223,7 @@ public class DeviceControlFragment extends BaseFragment {
             byte[] buffer = new byte[size];
             is.read(buffer);
             is.close();
-            json = new String(buffer, "UTF-8");
+            json = new String(buffer, StandardCharsets.UTF_8);
         } catch (IOException ex) {
             ex.printStackTrace();
             return null;
@@ -135,11 +245,6 @@ public class DeviceControlFragment extends BaseFragment {
             } else {
                 service.startMotor((byte) value);
             }
-
-            // TODO: modificar dataset
-
-            binding.chart.notifyDataSetChanged();
-            binding.chart.invalidate();
         }
     };
 
